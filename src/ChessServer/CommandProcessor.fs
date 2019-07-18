@@ -5,30 +5,39 @@ module CommandProcessor =
     open System
     open System.Collections.Concurrent
 
-    type ResponseChannel = (OutputCommand -> unit)
-    type Message = ResponseChannel * AsyncReplyChannel<ResponseChannel>
-
-    let agent = MailboxProcessor<Message>.Start(fun inbox ->
-        let rec loop() = async {
-            let! firstResponseChannel, firstReplyChannel = inbox.Receive();
-            let! secondResponseChannel, secondReplyChannel = inbox.Receive();
-
-            firstReplyChannel.Reply(secondResponseChannel)
-            secondReplyChannel.Reply(firstResponseChannel)
-            //do! Async.Sleep 10000
-            //replyChannel.Reply(sprintf "%s Smth" message)
-            return! loop()
-        }
-        loop ()
-    )
+    type ClientChannel = (ServerMessage -> unit)
 
     module MatchManager = 
         module private Internal =
-            let matchedChannels = new ConcurrentDictionary<string, ResponseChannel>()
+            let matchedChannels = new ConcurrentDictionary<string, ClientChannel>()
+            let queuedChannels = new ConcurrentQueue<ClientChannel>()
+
+            let rec matcherLoop() = async {
+                let rec innerLoop() = 
+                    if queuedChannels.Count >= 2 then
+                        let _, first = queuedChannels.TryDequeue()
+                        let _, second = queuedChannels.TryDequeue()
+
+                        let firstGuid = Guid.NewGuid().ToString()
+                        let secondGuid = Guid.NewGuid().ToString()
+
+                        matchedChannels.TryAdd(firstGuid, second) |> ignore
+                        matchedChannels.TryAdd(secondGuid, first) |> ignore
+
+                        let notify channel guid = channel (MatchNotify {Channel=guid} |> Notify)
+                        notify first firstGuid
+                        notify second secondGuid
+                        innerLoop()
+
+                do! Async.Sleep 5000
+                return! matcherLoop()
+            }
 
         open Internal
 
-        let registerChannel id channel = matchedChannels.TryAdd(id, channel)
+        matcherLoop() |> Async.Start
+
+        let startMatch = queuedChannels.Enqueue
         let getChannel id =
             if matchedChannels.ContainsKey(id) then
                 Some matchedChannels.[id]
@@ -36,23 +45,22 @@ module CommandProcessor =
             
         
     open MatchManager
-    
 
-    let processCommand cmd pushResponse pushNotify = async {
-        match cmd with
-        | PingCommand ping -> 
-            //let! reply = //agent.PostAndAsyncReply(fun replyChannel -> ping.Message, replyChannel)
-            let pong = PongCommand {Message=ping.Message}
-            pushResponse pong
-        | MatchCommand ->
-            pushResponse (PongCommand {Message="match started"})
-            let! sndResponseChannel = agent.PostAndAsyncReply(fun replyChannel -> pushResponse, replyChannel)
-            let matchId = Guid.NewGuid().ToString()
-            registerChannel matchId sndResponseChannel |> ignore
-            pushResponse (PongCommand {Message=sprintf "matched with id %s" matchId})
-        | ChatCommand chat ->
-            match getChannel chat.Channel with
-            | Some channel -> channel (PongCommand {Message=chat.Message})
-            | None -> pushResponse (PongCommand {Message="error"})
+    let processCommand cmd pushResponse = async {
+        try
+            match cmd with
+            | PingCommand ping -> 
+                let pong = PingResponse {Message=ping.Message} |> Response
+                pushResponse pong
+            | MatchCommand ->
+                startMatch pushResponse
+                let response = MatchResponse {Message="match started"} |> Response
+                pushResponse response
+            | ChatCommand chat ->
+                match getChannel chat.Channel with
+                | Some channel -> channel (ChatNotify {Message=chat.Message} |> Notify)
+                | None -> pushResponse (ErrorResponse {Message="Channel not found"} |> Response)
+        with e ->
+            printfn "%s" e.Message
     }
 
