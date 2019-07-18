@@ -14,7 +14,8 @@ module Logging =
     open Microsoft.Extensions.DependencyInjection
     open Microsoft.Extensions.Logging
 
-    let getLogger<'a>() = IocManager.getContainer().GetService<ILogger<'a>>()
+    let getLoggerOfType<'a>() = IocManager.getContainer().GetService<ILogger<'a>>()
+    let getLogger str = IocManager.getContainer().GetService<ILoggerFactory>().CreateLogger(str)
 
 
 

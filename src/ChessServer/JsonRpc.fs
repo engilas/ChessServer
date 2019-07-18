@@ -1,7 +1,7 @@
 ﻿namespace ChessServer
 
 module JsonRpc =
-    open Types
+    
 
     module private Internal =
         open System.Runtime.Serialization
@@ -51,6 +51,8 @@ module JsonRpc =
             settings.Converters.Add(new IdiomaticDuConverter())
             JsonConvert.SerializeObject(obj, Formatting.Indented, settings)
 
+        let deserialize<'a> str = JsonConvert.DeserializeObject<'a>(str)
+
         let serializeNotify method obj =
             let notify = createNotify method obj
             serialize notify
@@ -67,25 +69,15 @@ module JsonRpc =
             let response = createErrorResponse id obj
             serialize response
 
-        let deserializeRequest (str:string) =
-            let data = JsonConvert.DeserializeObject<JsonRpcRequest>(str)
-
-            match data.Method with
-            | "ping" -> 
-                data.Id, PingCommand (data.Params.ToObject<PingCommand>())
-            | "match" ->
-                data.Id, MatchCommand
-            | "chat" ->
-                data.Id, ChatCommand (data.Params.ToObject<ChatCommand>())
-            | x -> failwithf "unknown method %s" x
-
     open Internal
+    open CommandTypes
 
     let serializeNotify notify =
         match notify with
         | TestNotify n -> serializeNotify "test" n
         | MatchNotify n -> serializeNotify "match" n
         | ChatNotify n -> serializeNotify "chat" n
+        | MoveNotify n -> serializeNotify "move" n
         | ErrorNotify (method, n) -> serializeErrorNotify method n
         | x -> failwithf "unknown notify %A" x
 
@@ -96,5 +88,17 @@ module JsonRpc =
         | ErrorResponse r -> serializeErrorResponse id r
         | x -> failwithf "unknown command %A" x
 
-    let deserializeRequest = deserializeRequest
+    let deserializeRequest (str:string) =
+        let command = deserialize<JsonRpcRequest> str
+
+        match command.Method with
+        | "ping" -> 
+            command.Id, PingCommand (command.Params.ToObject<PingCommand>())
+        | "match" ->
+            command.Id, MatchCommand
+        | "chat" ->
+            command.Id, ChatCommand (command.Params.ToObject<ChatCommand>())
+        | "move" ->
+            command.Id, MoveCommand (command.Params.ToObject<MoveCommand>())
+        | x -> failwithf "unknown method %s" x
 

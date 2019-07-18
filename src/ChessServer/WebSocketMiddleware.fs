@@ -7,7 +7,7 @@ module Middleware =
     open Microsoft.Extensions.Logging
     
     type WebSocketMiddleware(next : RequestDelegate) =
-        let logger = getLogger<WebSocketMiddleware>()
+        let logger = getLoggerOfType<WebSocketMiddleware>()
 
         member __.Invoke(ctx : HttpContext) =
             async {
@@ -15,8 +15,10 @@ module Middleware =
                     match ctx.WebSockets.IsWebSocketRequest with
                     | true ->
                         let! webSocket = ctx.WebSockets.AcceptWebSocketAsync() |> Async.AwaitTask
-                        logger.LogInformation("Accept connection {con}", ctx.Connection.Id)
-                        do! SocketManager.processConnection webSocket
+                        let connectionId = ctx.Connection.Id
+                        logger.LogInformation("Accept connection {con}", connectionId)
+                        do! SocketManager.processConnection webSocket connectionId
+                        logger.LogInformation("Close connection {con}", connectionId)
                     | false -> ctx.Response.StatusCode <- 400
                 else
                     next.Invoke(ctx) |> ignore

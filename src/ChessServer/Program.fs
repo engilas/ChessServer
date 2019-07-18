@@ -78,20 +78,21 @@ let errorHandler (ex : Exception) (logger : ILogger) =
 // Config and Main
 // ---------------------------------
 
-let configureCors (builder : CorsPolicyBuilder) =
-    builder.WithOrigins("http://localhost:8080")
+let configureCors (configuration: IConfiguration) (builder : CorsPolicyBuilder) =
+    builder.WithOrigins(configuration.["AllowedHosts"])
            .AllowAnyMethod()
            .AllowAnyHeader()
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
     let env = app.ApplicationServices.GetService<IHostingEnvironment>()
+    let config = app.ApplicationServices.GetService<IConfiguration>()
     IocManager.setContainer app.ApplicationServices
     (match env.IsDevelopment() with
     | true  -> app.UseDeveloperExceptionPage()
     | false -> app.UseGiraffeErrorHandler errorHandler)
-        .UseHttpsRedirection()
-        .UseCors(configureCors)
+        //.UseHttpsRedirection()
+        .UseCors(configureCors config)
         .UseWebSockets()
         .UseMiddleware<Middleware.WebSocketMiddleware>()
         .UseStaticFiles()
