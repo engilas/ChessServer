@@ -1,6 +1,8 @@
 ﻿namespace ChessServer
 
 module Session =
+    open ChannelTypes
+
     type Color = White | Black
     type Move = {
         Source: Color
@@ -11,11 +13,13 @@ module Session =
 
     type Session = {
         CreateMove: Move -> Async<MoveResult>
+        ChatMessage: ClientChannel -> string -> unit
     }
 
+    open ChannelTypes
+    open CommandTypes
+
     module private Internal =
-        open ChannelTypes
-        open CommandTypes
 
         type Message = Move * AsyncReplyChannel<MoveResult>
         type NextMove = Color
@@ -61,7 +65,17 @@ module Session =
         let state = {WhitePlayer = whitePlayer; BlackPlayer = blackPlayer; Next = White}
         let agent = sessionAgent state
         let createMoveFun move = agent.PostAndAsyncReply(fun a -> move, a)
-        {CreateMove = createMoveFun}
+
+        let push channel x = x |> Notify |> channel.PushMessage
+
+        let chatFun channel msg = 
+            if channel.Id = whitePlayer.Id then
+                push blackPlayer <| ChatNotify { Message = msg }
+
+        {
+            CreateMove = createMoveFun
+            ChatMessage =
+        }
 
 
 

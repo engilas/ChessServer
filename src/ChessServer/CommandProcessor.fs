@@ -12,45 +12,50 @@ module CommandProcessor =
 
     module private MatchManager = 
         module private Internal =
+            open System.Threading.Channels
+
             let logger = Logging.getLogger "MatchManager"
 
-            let matchedChannels = new ConcurrentDictionary<string, ClientChannel>()
-            let queuedChannels = new ConcurrentQueue<ClientChannel>()
             let sessions = new ConcurrentDictionary<string, Color * Session>()
 
-            let rec matcherLoop() = async {
-                if queuedChannels.Count >= 2 then
-                    let handleChannel() = async {
-                        let _, channel = queuedChannels.TryDequeue()
-                        let guid = Guid.NewGuid().ToString()
-                        matchedChannels.TryAdd(guid, channel) |> ignore
-                        do! channel.ChangeState Matched
-                        channel.PushMessage (MatchNotify {Channel=guid} |> Notify)
-                        return channel, guid
-                    }
+            type MatcherCommand =
+            | Add of ClientChannel
+            | Remove of ClientChannel
 
-                    let t1 = handleChannel()
-                    let t2 = handleChannel()
-                    let! first, firstGuid = t1
-                    let! second, secondGuid = t2
+            let agent = MailboxProcessor.Start(fun inbox -> 
+                let rec matcherLoop channels = async {
+                    match channels with
+                    | first::second::_ ->
+                        let handleChannel channel = async {
+                            let guid = Guid.NewGuid().ToString()
+                            do! channel.ChangeState Matched
+                            channel.PushMessage (MatchNotify {Channel=guid} |> Notify)
+                            return guid
+                        }
+                        logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
+                        let! firstGuid = handleChannel first
+                        let! secondGuid = handleChannel second
+                        let session = createSession first second
+                        sessions.TryAdd(firstGuid, (White, session)) |> ignore
+                        sessions.TryAdd(secondGuid, (Black, session)) |> ignore
+                    | _ -> ()
+                    let! command = inbox.Receive()
 
-                    logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
+                    let list =
+                        match command with
+                        | Add channel -> channel :: channels
+                        | Remove channel -> channels |> List.filter (fun x -> x.Id <> channel.Id)
 
-                    let session = createSession first second
-                    sessions.TryAdd(firstGuid, (White, session)) |> ignore
-                    sessions.TryAdd(secondGuid, (Black, session)) |> ignore
+                    return! matcherLoop list
+                }
+                matcherLoop []
+            )
 
-                    ()
-                else
-                    do! Async.Sleep 5000
-                return! matcherLoop()
-            }
+            
 
         open Internal
 
-        matcherLoop() |> Async.Start
-
-        let startMatch = queuedChannels.Enqueue
+        let startMatch x = Add x |> agent.Post
         let getChannel id =
             if matchedChannels.ContainsKey(id) then
                 Some matchedChannels.[id]
@@ -107,7 +112,7 @@ module CommandProcessor =
                         changeState Matching
                     | otherState ->
                         logger.LogInformation("Can't match client {0} with state {1}", channel.Id, otherState)
-                        pushError "Already in matching"
+                        pushError "Already matched"
                 | ChatCommand chat ->
                     match getChannel chat.Channel with
                     | Some otherChannel -> otherChannel.PushMessage (ChatNotify {Message=chat.Message} |> Notify)
