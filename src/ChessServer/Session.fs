@@ -40,14 +40,17 @@ module Session =
                     | White -> state.WhitePlayer
                     | Black -> state.BlackPlayer
 
-                if move.Source = state.Next then
-                    replyChannel.Reply Ok
-                    let notify = MoveNotify {From = move.From; To = move.To} |> Notify
-                    opponentChannel.PushMessage notify
-                else
-                    replyChannel.Reply Error
+                let state =
+                    if move.Source = state.Next then
+                        replyChannel.Reply Ok
+                        let notify = MoveNotify {From = move.From; To = move.To} |> Notify
+                        opponentChannel.PushMessage notify
+                        {state with Next = opponentColor}
+                    else
+                        replyChannel.Reply Error
+                        state
 
-                return! loop {state with Next = opponentColor}
+                return! loop state
             }
             loop state
         )

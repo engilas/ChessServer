@@ -45,9 +45,15 @@ module CommandTypes =
 module ChannelTypes = 
     open CommandTypes
 
-    type PushMessage = (ServerMessage -> unit)
+    type PushMessage = ServerMessage -> unit
+
+    type ClientState = 
+    | New
+    | Matching
+    | Matched
 
     type ClientChannel = {
         Id: string
         PushMessage: PushMessage
+        ChangeState: ClientState -> Async<unit>
     }

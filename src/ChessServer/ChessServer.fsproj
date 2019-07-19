@@ -21,7 +21,7 @@
     <Compile Include="IdiomaticDuConverter.fs" />
     <Compile Include="JsonRpc.fs" />
     <Compile Include="CommandProcessor.fs" />
-    <Compile Include="Sockets\SocketManager.fs" />
+    <Compile Include="SocketManager.fs" />
     <Compile Include="WebSocketMiddleware.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

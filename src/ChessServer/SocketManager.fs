@@ -19,6 +19,8 @@ module SocketManager =
         if not ct.IsCancellationRequested then 
             return! startNotificator sendNotify ct
     }
+
+    open CommandProcessor
     
     let processConnection (connection: WebSocket) connectionId = async {
         do! Async.Sleep 1
@@ -61,7 +63,9 @@ module SocketManager =
                 |> Async.AwaitTask
         }
 
-        let rec readLoop () = async {
+        let processCommand, changeState = createCommandProcessor connectionId
+
+        let rec readLoop() = async {
             let! result = readSocket()
             match result.CloseStatus.HasValue with
             | false -> 
@@ -78,14 +82,14 @@ module SocketManager =
                     let clientChannel : ClientChannel = {
                         Id = connectionId
                         PushMessage = pushMessage
+                        ChangeState = changeState
                     }
 
-                    CommandProcessor.processCommand command clientChannel |> Async.Start
+                    do! processCommand command clientChannel
                 with e ->
                     logger.LogError(e, "Error in read loop")
                     let error = ErrorResponse {Message = sprintf "Error: %s" e.Message}
                     pushResponse -1 error
-
                 return! readLoop()
             | true -> 
                 do! closeConnection result.CloseStatus.Value result.CloseStatusDescription
