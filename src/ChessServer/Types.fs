@@ -4,15 +4,15 @@ module CommandTypes =
     type Message = { Message:string }
 
     type PingCommand = Message
-    type ChatCommand = { Message:string; Channel:string }
-    type MoveCommand = { Channel: string; From: string; To: string }
+    type ChatCommand = Message
+    type MoveCommand = { From: string; To: string }
 
     type PingResponse = Message
     type MatchResponse = Message
 
     type TestNotify = Message
     type ChatNotify = Message
-    type MatchNotify = { Channel:string }
+    type MatchNotify = Message
     type MoveNotify = { From: string; To: string }
 
     type ErrorResponse = Message
@@ -47,10 +47,23 @@ module ChannelTypes =
 
     type PushMessage = ServerMessage -> unit
 
+    type Color = White | Black
+    type Move = {
+        Source: Color
+        From: string
+        To: string
+    }
+    type MoveResult = Ok | Error
+
+    type Session = {
+        CreateMove: Move -> Async<MoveResult>
+        ChatMessage: Color -> string -> unit
+    }
+
     type ClientState = 
     | New
     | Matching
-    | Matched
+    | Matched of Color * Session
 
     type ClientChannel = {
         Id: string

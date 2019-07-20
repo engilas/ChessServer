@@ -2,21 +2,6 @@
 
 module Session =
     open ChannelTypes
-
-    type Color = White | Black
-    type Move = {
-        Source: Color
-        From: string
-        To: string
-    }
-    type MoveResult = Ok | Error
-
-    type Session = {
-        CreateMove: Move -> Async<MoveResult>
-        ChatMessage: ClientChannel -> string -> unit
-    }
-
-    open ChannelTypes
     open CommandTypes
 
     module private Internal =
@@ -66,15 +51,16 @@ module Session =
         let agent = sessionAgent state
         let createMoveFun move = agent.PostAndAsyncReply(fun a -> move, a)
 
-        let push channel x = x |> Notify |> channel.PushMessage
+        let push channel msg = ChatNotify {Message = msg} |> Notify |> channel.PushMessage
 
-        let chatFun channel msg = 
-            if channel.Id = whitePlayer.Id then
-                push blackPlayer <| ChatNotify { Message = msg }
+        let chatFun color msg =
+            match color with
+            | White -> push blackPlayer msg
+            | Black -> push whitePlayer msg
 
         {
             CreateMove = createMoveFun
-            ChatMessage =
+            ChatMessage = chatFun
         }
 
 
