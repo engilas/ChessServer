@@ -20,17 +20,20 @@ module CommandProcessor =
 
             let agent = MailboxProcessor.Start(fun inbox -> 
                 let rec matcherLoop channels = async {
-                    match channels with
-                    | first::second::_ ->
-                        logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
-                        let session = createSession first second
-                        let state color = Matched (color, session)
-                        do! first.ChangeState (state White)
-                        do! second.ChangeState (state Black)
-                        let notify = MatchNotify {Message = "matched"} |> Notify
-                        first.PushMessage notify
-                        second.PushMessage notify
-                    | _ -> ()
+                    let! channels = async {
+                        match channels with
+                        | first::second::lst -> 
+                            logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
+                            let whiteSession, blackSession = createSession first second
+                            do! first.ChangeState (Matched whiteSession)
+                            do! second.ChangeState (Matched blackSession)
+                            let notify = MatchNotify {Message = "matched"}
+                            first.PushNotification notify
+                            second.PushNotification notify
+                            return lst
+                        | lst -> return lst
+                    }
+
                     let! command = inbox.Receive()
 
                     let list =
@@ -48,6 +51,7 @@ module CommandProcessor =
         open Internal
 
         let startMatch x = Add x |> agent.Post
+        let stopMatch x = Remove x |> agent.Post
 
     module Internal = 
         open MatchManager
@@ -56,67 +60,71 @@ module CommandProcessor =
         | Regular of Request * ClientChannel
         | ChangeState of ClientState
 
-        type Message = ProcessAgentCommand * AsyncReplyChannel<unit>
+        type Message = ProcessAgentCommand * AsyncReplyChannel<Response option>
 
         let processAgent (channelId: string) initState processFun = MailboxProcessor<Message>.Start(fun inbox ->
             let rec loop state = async {
                 let! command, replyChannel = inbox.Receive()
 
-                let! newState = async {
+                let! response, newState = async {
                     match command with
                     | Regular (cmd, channel) -> 
-                        do! processFun cmd channel state
-                        return state
+                        let! response = processFun cmd channel state
+                        return (response, state)
                     | ChangeState newState ->
                         logger.LogInformation("Channel {0} changed state to {1}", channelId, newState)
-                        return newState
+                        return (None, newState)
                 }
 
-                replyChannel.Reply()
+                replyChannel.Reply response
                 return! loop newState
             }
             loop initState
         )
 
         let processCommand cmd channel (state: ClientState) = async {
-            let pushError msg = channel.PushMessage (ErrorResponse {Message=msg} |> Response)
+            let getErrorResponse msg = Some <| ErrorResponse {Message=msg}
             let changeState x = channel.ChangeState x |> ignore //avoid dead lock in mailbox
-            let invalidState error =
-                logger.LogInformation(sprintf "Can't process command %A for channel {0} with state {1}" cmd, channel.Id, state)
-                pushError error
+            let getInvalidStateError error =
+                logger.LogInformation(sprintf "Can't process command %A for channel %s with state %A" cmd channel.Id state)
+                getErrorResponse error
 
             try
                 match cmd with
                 | PingCommand ping -> 
-                    let pong = PingResponse {Message=ping.Message} |> Response
-                    channel.PushMessage pong
+                    return Some <| PingResponse {Message=ping.Message}
                 | MatchCommand ->
                     match state with
                     | New ->
                         startMatch channel
-                        let response = MatchResponse {Message="match started"} |> Response
-                        channel.PushMessage response
                         changeState Matching
-                    | _ -> invalidState "Already matched"
+                        return Some <| MatchResponse {Message="match started"}
+                    | _ -> return getInvalidStateError "Already matched"
                 | ChatCommand chat ->
                     match state with
-                    | Matched (color, session) -> 
-                        session.ChatMessage color chat.Message
-                    | _ -> invalidState "Not matched"
+                    | Matched session -> 
+                        session.ChatMessage chat.Message
+                        return None
+                    | _ -> return getInvalidStateError "Not matched"
                 | MoveCommand move ->
                     match state with
-                    | Matched (color, session) ->
-                        let! result = session.CreateMove {From = move.From; To = move.To; Source = color}
+                    | Matched session ->
+                        let! result = session.CreateMove move.From move.To
                         match result with
-                        | Ok -> ()
-                        | Error -> pushError "Move error"
-                    | _ -> invalidState "Not matched"
+                        | Ok -> return None
+                        | Error msg -> return getErrorResponse <| sprintf "Move error: %s" msg
+                    | _ -> return getInvalidStateError "Not matched"
+                | DisconnectCommand ->
+                    match state with
+                    | Matching -> stopMatch channel
+                    | Matched session -> session.CloseSession "Player disconnected"
+                    return None
                 | x ->
                     failwithf "no processor for the command %A" x
+                    return None
             with e ->
                 logger.LogError(e, "Error occurred while processing command")
-                let errResponse = (ErrorResponse {Message = sprintf "Internal error: %s" e.Message}) |> Response
-                channel.PushMessage errResponse
+                return getErrorResponse <| sprintf "Internal error: %s" e.Message
         }
 
     open Internal
@@ -126,7 +134,7 @@ module CommandProcessor =
         let agent = processAgent channel New processCommand
         let postAndReply x = agent.PostAndAsyncReply(fun channel -> x, channel)
         let f1 request channel = (request, channel) |> Regular |> postAndReply
-        let f2 state = state |> ChangeState |> postAndReply
+        let f2 state = state |> ChangeState |> postAndReply |> Async.Ignore
 
         (f1, f2)
 

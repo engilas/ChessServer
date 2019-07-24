@@ -23,6 +23,7 @@ module CommandTypes =
     | MatchCommand
     | ChatCommand of ChatCommand
     | MoveCommand of MoveCommand
+    | DisconnectCommand
 
     type Response =
     | PingResponse of PingResponse
@@ -37,15 +38,10 @@ module CommandTypes =
     | MatchNotify of MatchNotify
     | ChatNotify of ChatNotify
     | MoveNotify of MoveNotify
-
-    type ServerMessage =
-    | Response of Response
-    | Notify of Notify
+    | SessionCloseNotify of Message
 
 module ChannelTypes = 
     open CommandTypes
-
-    type PushMessage = ServerMessage -> unit
 
     type Color = White | Black
     type Move = {
@@ -53,20 +49,21 @@ module ChannelTypes =
         From: string
         To: string
     }
-    type MoveResult = Ok | Error
+    type MoveResult = Ok | Error of string
 
     type Session = {
-        CreateMove: Move -> Async<MoveResult>
-        ChatMessage: Color -> string -> unit
+        CreateMove: string -> string -> Async<MoveResult>
+        ChatMessage: string -> unit
+        CloseSession: string -> unit
     }
 
     type ClientState = 
     | New
     | Matching
-    | Matched of Color * Session
+    | Matched of Session
 
     type ClientChannel = {
         Id: string
-        PushMessage: PushMessage
+        PushNotification: Notify -> unit
         ChangeState: ClientState -> Async<unit>
     }
