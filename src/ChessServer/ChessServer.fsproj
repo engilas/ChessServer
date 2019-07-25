@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="ChessHelper.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="ChessHelper.fs" />
     <Compile Include="Session.fs" />
     <Compile Include="Logging.fs" />
     <Compile Include="IdiomaticDuConverter.fs" />

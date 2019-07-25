@@ -2,6 +2,9 @@
 
 module ChessHelper = 
     open System
+    open CommandTypes
+    open DomainTypes
+    open ChessEngine.Engine
 
     let getColumn (input:string) =
         if input = null then
@@ -23,6 +26,29 @@ module ChessHelper =
         match input.Length with
         | 2 -> 8 - (input.Substring(1, 1) |> Int32.Parse) |> byte
         | _ -> failwithf "Invalid input string length '%s'" input
+
+    let getPosition (pos: byte) =
+        let pos = int pos
+        let col = pos % 8
+        let row = pos / 8
+        ((int 'a' + 7 - col) |> char |> string) + (row + 1).ToString()
         
+    let moveAction from _to = {From = from; To = _to}
+
+    let checkEndGame (engine: Engine) =
+        if engine.StaleMate then
+            if engine.InsufficientMaterial then
+                (Draw, "Draw by insufficient material") |> Some
+            elif engine.RepeatedMove then
+                (Draw, "Draw by repetition") |> Some
+            elif engine.FiftyMove then
+                (Draw, "Draw by fifty move rule") |> Some
+            else
+                (Draw, "Stalemate") |> Some
+        elif (engine.GetWhiteMate()) then
+            (BlackWin, "Black mates") |> Some
+        elif (engine.GetBlackMate()) then
+            (WhiteWin, "White mates") |> Some
+        else None
         
 

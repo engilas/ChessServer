@@ -109,7 +109,7 @@ module CommandProcessor =
                 | MoveCommand move ->
                     match state with
                     | Matched session ->
-                        let! result = session.CreateMove move.From move.To
+                        let! result = session.CreateMove move
                         match result with
                         | Ok -> return None
                         | Error msg -> return getErrorResponse <| sprintf "Move error: %s" msg

@@ -2,6 +2,7 @@
 
 module Session =
     open ChannelTypes
+    open DomainTypes
     open CommandTypes
 
     module private Internal =
@@ -41,10 +42,10 @@ module Session =
                 let state =
                     if move.Source = state.Next then
 
-                        let colSrc = getColumn move.From
-                        let rowSrc = getRow move.From
-                        let colDst = getColumn move.To
-                        let rowDst = getRow move.To
+                        let colSrc = getColumn move.Command.From
+                        let rowSrc = getRow move.Command.From
+                        let colDst = getColumn move.Command.To
+                        let rowDst = getRow move.Command.To
 
                         let pieceExists = state.Engine.GetPieceTypeAt(colSrc, rowSrc) <> ChessPieceType.None
 
@@ -54,14 +55,37 @@ module Session =
                             state.Engine.GetPieceColorAt(colSrc, rowSrc)
                             |> domainColorMap = state.Next
 
+                        match move.Command.PawnPromotion with
+                        | Some t -> state.Engine.PromoteToPieceType <- t
+                        | None -> state.Engine.PromoteToPieceType <- ChessPieceType.Queen
+
                         if
                             pieceExists
                             && sameColor
                             && state.Engine.IsValidMove(colSrc, rowSrc, colDst, rowDst)
                             && state.Engine.MovePiece(colSrc, rowSrc, colDst, rowDst)
                         then
+                            let ifExists (x:ChessPieceType) getResult =
+                                match x with
+                                | ChessPieceType.None -> None
+                                | _ -> Some <| getResult()
+
+                            let lastMove = state.Engine.LastMove
+                            let takenPiece = 
+                                ifExists lastMove.TakenPiece.PieceType (fun () -> getPosition lastMove.TakenPiece.Position)
+
+                            let getMoveAction (x: PieceMoving) = 
+                                let src = getPosition x.SrcPosition
+                                let dst = getPosition x.DstPosition
+                                moveAction src dst
+                            let move = getMoveAction lastMove.MovingPiecePrimary
+                            let secondMove = 
+                                ifExists lastMove.MovingPieceSecondary.PieceType (fun () -> getMoveAction lastMove.MovingPieceSecondary)
+
+                            let pawnPromoted = ifExists lastMove.PawnPromotedTo (fun () -> lastMove.PawnPromotedTo)
+
                             replyChannel.Reply Ok
-                            let notify = MoveNotify {From = move.From; To = move.To}
+                            let notify = MoveNotify { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = pawnPromoted }
                             opponentChannel.PushNotification notify
                             {state with Next = opponentColor}
                         else
@@ -71,7 +95,18 @@ module Session =
                         replyChannel.Reply (Error "Not your turn")
                         state
 
-                return! loop state
+                match checkEndGame state.Engine with
+                | None -> return! loop state
+                | Some (result, reason) -> 
+                    let endGameNotify = EndGameNotify {
+                        Result = result
+                        Reason = reason
+                    }
+                    do! state.WhitePlayer.ChangeState New
+                    do! state.BlackPlayer.ChangeState New
+                    state.WhitePlayer.PushNotification endGameNotify
+                    state.BlackPlayer.PushNotification endGameNotify
+
             }
             loop state
         )
@@ -84,8 +119,8 @@ module Session =
 
         let state = {Engine = engine; WhitePlayer = whitePlayer; BlackPlayer = blackPlayer; Next = White}
         let agent = sessionAgent state
-        let createMoveFun color from _to = 
-            agent.PostAndAsyncReply(fun a -> {Source=color; From=from; To=_to}, a)
+        let createMoveFun color command = 
+            agent.PostAndAsyncReply(fun a -> {Source=color; Command = command}, a)
 
         let push channel msg = ChatNotify {Message = msg} |> channel.PushNotification
 

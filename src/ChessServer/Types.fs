@@ -1,11 +1,23 @@
 ﻿namespace ChessServer
 
+module DomainTypes =
+    type Color = White | Black
+    type SessionResult = WhiteWin | BlackWin | Draw
+
 module CommandTypes =
+    open ChessEngine.Engine
+    open DomainTypes
+
     type Message = { Message:string }
+    type MoveAction = { From: string; To: string }
 
     type PingCommand = Message
     type ChatCommand = Message
-    type MoveCommand = { From: string; To: string }
+    type MoveCommand = { 
+        From: string
+        To: string 
+        PawnPromotion: ChessPieceType option
+    }
 
     type PingResponse = Message
     type MatchResponse = Message
@@ -13,7 +25,18 @@ module CommandTypes =
     type TestNotify = Message
     type ChatNotify = Message
     type MatchNotify = Message
-    type MoveNotify = { From: string; To: string }
+
+    type MoveNotify = { 
+        Primary: MoveAction
+        Secondary: MoveAction option
+        TakenPiecePos: string option
+        PawnPromotion: ChessPieceType option
+    }
+
+    type EndGameNotify = {
+        Result: SessionResult
+        Reason: string
+    }
 
     type ErrorResponse = Message
     type ErrorNotify = ErrorResponse
@@ -38,21 +61,21 @@ module CommandTypes =
     | MatchNotify of MatchNotify
     | ChatNotify of ChatNotify
     | MoveNotify of MoveNotify
+    | EndGameNotify of EndGameNotify
     | SessionCloseNotify of Message
 
-module ChannelTypes = 
+module ChannelTypes =
+    open DomainTypes
     open CommandTypes
 
-    type Color = White | Black
     type Move = {
         Source: Color
-        From: string
-        To: string
+        Command: MoveCommand
     }
     type MoveResult = Ok | Error of string
 
     type Session = {
-        CreateMove: string -> string -> Async<MoveResult>
+        CreateMove: MoveCommand -> Async<MoveResult>
         ChatMessage: string -> unit
         CloseSession: string -> unit
     }
