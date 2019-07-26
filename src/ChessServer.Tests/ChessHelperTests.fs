@@ -23,24 +23,25 @@ let ``getColumn second symbol ignored`` () =
     let col = getColumn "a!"
     Assert.Equal(0uy, col)
 
-[<Fact>]
-let ``getColumn not in range a-h throws`` () =
-    throwsAny(fun () -> getColumn "z1") |> ignore
-    throwsAny(fun () -> getColumn "i1") |> ignore
-    throwsAny(fun () -> getColumn "51") |> ignore
-    throwsAny(fun () -> getColumn "!1") |> ignore
-    0
+[<Theory>]
+[<InlineData("z1")>]
+[<InlineData("i1")>]
+[<InlineData("51")>]
+[<InlineData("!1")>]
+let ``getColumn not in range a-h throws`` input =
+    throwsAny(fun () -> getColumn input) |> ignore
 
 [<Fact>]
 let ``getColumn null throws`` () =
     let ex = throwsAny(fun () -> getColumn null)
     Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
 
-[<Fact>]
-let ``getColumn invalid symbol count`` () =
-    throwsAny(fun () -> getColumn "a") |> ignore
-    throwsAny(fun () -> getColumn "1") |> ignore
-    throwsAny(fun () -> getColumn "1bx") |> ignore
+[<Theory>]
+[<InlineData("a")>]
+[<InlineData("1")>]
+[<InlineData("1bx")>]
+let ``getColumn invalid symbol count`` input =
+    throwsAny(fun () -> getColumn input) |> ignore
 
 
 
@@ -58,27 +59,27 @@ let ``getRow 8 returns 0`` () =
 
 [<Fact>]
 let ``getRow first symbol ignored`` () =
-    let input = "!5"
-    let col = getRow input
+    let col = getRow "!5"
     Assert.Equal(3uy, col)
 
-[<Fact>]
-let ``getRow not in range 1-8 throws`` () =
-    Assert.ThrowsAny(fun () -> getRow "z0" |> ignore) |> ignore
-    Assert.ThrowsAny(fun () -> getRow "i9" |> ignore) |> ignore
-    Assert.ThrowsAny(fun () -> getRow "x!" |> ignore) |> ignore
-    0
+[<Theory>]
+[<InlineData("z0")>]
+[<InlineData("i9")>]
+[<InlineData("x!")>]
+let ``getRow not in range 1-8 throws`` input =
+    throwsAny(fun () -> getRow input) |> ignore
 
 [<Fact>]
 let ``getRow null throws`` () =
-    let ex = Assert.ThrowsAny(fun () -> getRow null |> ignore)
+    let ex = throwsAny(fun () -> getRow null |> ignore)
     Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
 
-[<Fact>]
-let ``getRow invalid symbol count`` () =
-    Assert.ThrowsAny(fun () -> getRow "a" |> ignore) |> ignore
-    Assert.ThrowsAny(fun () -> getRow "1" |> ignore) |> ignore
-    Assert.ThrowsAny(fun () -> getRow "1bx" |> ignore) |> ignore
+[<Theory>]
+[<InlineData("a")>]
+[<InlineData("1")>]
+[<InlineData("1bx")>]
+let ``getRow invalid symbol count`` input =
+    throwsAny(fun () -> getRow input) |> ignore
 
 
 
@@ -88,7 +89,9 @@ let ``getPosition 0 returns a8`` () =
     let result = getPosition 0uy
     Assert.Equal(result, "a8")
 
-[<Fact>]
-let ``getPosition check range`` () =
-    Assert.ThrowsAny(fun () -> getPosition 100uy)
-    Assert.Equal(result, "a8")
+let positionRange() = seq {65uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
+
+[<Theory>]
+[<MemberData("positionRange")>]
+let ``getPosition check range`` input =
+    throwsAny(fun () -> getPosition input) |> ignore
