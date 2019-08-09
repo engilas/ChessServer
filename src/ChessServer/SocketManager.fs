@@ -10,17 +10,21 @@ module SocketManager =
     open System.Text
     open Microsoft.Extensions.Logging
 
-    let logger = Logging.getLogger "SocketManager"
+    module private Internal =
+        
 
-    let rec startNotificator sendNotify (ct: CancellationToken) = async {
-        do sendNotify (TestNotify {Message = "test"})
-        do! Async.Sleep 100000
+        let logger = Logging.getLogger "SocketManager"
 
-        if not ct.IsCancellationRequested then 
-            return! startNotificator sendNotify ct
-    }
+        let rec startNotificator sendNotify (ct: CancellationToken) = async {
+            do sendNotify (TestNotify {Message = "test"})
+            do! Async.Sleep 100000
+
+            if not ct.IsCancellationRequested then 
+                return! startNotificator sendNotify ct
+        }
 
     open CommandProcessor
+    open Internal
     
     let processConnection (connection: WebSocket) connectionId = async {
         do! Async.Sleep 1

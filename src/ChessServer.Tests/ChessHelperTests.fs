@@ -2,33 +2,27 @@
 
 open System
 open Xunit
-open ChessServer
+open ChessServer.ChessHelper
+open TestHelper
 
-open ChessHelper
-
-let throwsAny f = Assert.ThrowsAny(fun () -> f() |> ignore)
-
-[<Fact>]
-let ``getColumn a returns 0`` () =
-    let col = getColumn "a5"
-    Assert.Equal(0uy, col)
-
-[<Fact>]
-let ``getColumn h returns 7`` () =
-    let col = getColumn "h5"
-    Assert.Equal(7uy, col)
-
-[<Fact>]
-let ``getColumn second symbol ignored`` () =
-    let col = getColumn "a!"
-    Assert.Equal(0uy, col)
+[<Theory>]
+[<InlineData("a5", 0)>]
+[<InlineData("h5", 7)>]
+[<InlineData("a!", 0)>] //second symbol ignored
+let ``getColumn correctness`` input output =
+    let col = getColumn input
+    Assert.Equal(output, col)
 
 [<Theory>]
 [<InlineData("z1")>]
 [<InlineData("i1")>]
 [<InlineData("51")>]
 [<InlineData("!1")>]
-let ``getColumn not in range a-h throws`` input =
+//invalid symbol count
+[<InlineData("a")>]
+[<InlineData("1")>]
+[<InlineData("1bx")>]
+let ``getColumn invalid data`` input =
     throwsAny(fun () -> getColumn input) |> ignore
 
 [<Fact>]
@@ -36,37 +30,27 @@ let ``getColumn null throws`` () =
     let ex = throwsAny(fun () -> getColumn null)
     Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
 
+
+
+
+
 [<Theory>]
-[<InlineData("a")>]
-[<InlineData("1")>]
-[<InlineData("1bx")>]
-let ``getColumn invalid symbol count`` input =
-    throwsAny(fun () -> getColumn input) |> ignore
-
-
-
-
-
-[<Fact>]
-let ``geRow 1 returns 7`` () =
-    let row = getRow "a1"
-    Assert.Equal(7uy, row)
-
-[<Fact>]
-let ``getRow 8 returns 0`` () =
-    let col = getRow "h8"
-    Assert.Equal(0uy, col)
-
-[<Fact>]
-let ``getRow first symbol ignored`` () =
-    let col = getRow "!5"
-    Assert.Equal(3uy, col)
+[<InlineData("a1", 7)>]
+[<InlineData("h8", 0)>]
+[<InlineData("!5", 3)>] //first symbol ignored
+let ``geRow correctness`` input output =
+    let row = getRow input
+    Assert.Equal(output, row)
 
 [<Theory>]
 [<InlineData("z0")>]
 [<InlineData("i9")>]
 [<InlineData("x!")>]
-let ``getRow not in range 1-8 throws`` input =
+//invalid symbol count
+[<InlineData("a")>]
+[<InlineData("1")>]
+[<InlineData("1bx")>]
+let ``getRow invalid data`` input =
     throwsAny(fun () -> getRow input) |> ignore
 
 [<Fact>]
@@ -74,23 +58,18 @@ let ``getRow null throws`` () =
     let ex = throwsAny(fun () -> getRow null |> ignore)
     Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
 
+
+
+
 [<Theory>]
-[<InlineData("a")>]
-[<InlineData("1")>]
-[<InlineData("1bx")>]
-let ``getRow invalid symbol count`` input =
-    throwsAny(fun () -> getRow input) |> ignore
+[<InlineData(0, "a8")>]
+[<InlineData(63, "h1")>]
+let ``getPosition correctness`` input output =
+    let result = getPosition input
+    Assert.Equal(result, output)
 
 
-
-
-[<Fact>]
-let ``getPosition 0 returns a8`` () =
-    let result = getPosition 0uy
-    Assert.Equal(result, "a8")
-
-let positionRange() = seq {65uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
-
+let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =

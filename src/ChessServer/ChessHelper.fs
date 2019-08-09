@@ -32,7 +32,7 @@ module ChessHelper =
         | _ -> failwithf "Invalid input string length '%s'" input
 
     let getPosition (pos: byte) =
-        if pos > 64uy then 
+        if pos >= 64uy then 
             failwithf "Invalid argument: '%d' not in range (1-64)" pos
         
         let pos = int pos

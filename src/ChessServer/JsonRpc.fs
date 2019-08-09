@@ -79,6 +79,7 @@ module JsonRpc =
         | ChatNotify n -> serializeNotify "chat" n
         | MoveNotify n -> serializeNotify "move" n
         | ErrorNotify (method, n) -> serializeErrorNotify method n
+        | EndGameNotify n -> serializeNotify "endgame" n
         | SessionCloseNotify n -> serializeNotify "session.close" n
         | x -> failwithf "unknown notify %A" x
 
