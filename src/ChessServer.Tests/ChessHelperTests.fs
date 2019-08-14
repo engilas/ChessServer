@@ -23,12 +23,11 @@ let ``getColumn correctness`` input output =
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getColumn invalid data`` input =
-    throwsAny(fun () -> getColumn input) |> ignore
+    throwsWithMessage "invalid" (fun () -> getColumn input)
 
 [<Fact>]
 let ``getColumn null throws`` () =
-    let ex = throwsAny(fun () -> getColumn null)
-    Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
+    throws<ArgumentNullException>(fun () -> getColumn null |> ignore)
 
 
 
@@ -51,12 +50,11 @@ let ``geRow correctness`` input output =
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getRow invalid data`` input =
-    throwsAny(fun () -> getRow input) |> ignore
+    throwsWithMessage "invalid" (fun () -> getRow input)
 
 [<Fact>]
 let ``getRow null throws`` () =
-    let ex = throwsAny(fun () -> getRow null |> ignore)
-    Assert.Equal(ex.GetType(), typeof<ArgumentNullException>)
+    throws<ArgumentNullException>(fun () -> getRow null |> ignore)
 
 
 
@@ -73,4 +71,4 @@ let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =
-    throwsAny(fun () -> getPosition input) |> ignore
+    throwsWithMessage "invalid" (fun () -> getPosition input) |> ignore

@@ -3,7 +3,6 @@
 open ChessServer.JsonRpc
 open Xunit
 open ChessServer.CommandTypes
-open TestHelper
 
 [<Fact>]
 let ``serializeNotify correctness`` () =
