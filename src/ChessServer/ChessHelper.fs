@@ -6,6 +6,8 @@ module ChessHelper =
     open DomainTypes
     open ChessEngine.Engine
 
+    let invalidArg argName value msg = invalidArg argName <| sprintf "'%A': %s" value msg
+
     let getColumn (input:string) =
         if input = null then
             raise (ArgumentNullException("input"))
@@ -14,26 +16,27 @@ module ChessHelper =
         | 2 ->
             let col = input.Substring(0, 1).ToLowerInvariant().[0]
             if col < 'a' || col > 'h' then
-                failwithf "Invalid argument '%s' - column not in range (a-h)" input
+                invalidArg "input" input "column not in range (a-h)"
             
             byte col - byte 'a'
-        | _ -> failwithf "Invalid input string length '%s'" input
+        | _ -> invalidArg "input" input "wrong string length"
 
     let getRow (input:string) =
-        if input = null then
-            raise (ArgumentNullException("input"))
+        if input = null then nullArg "input"
 
         match input.Length with
         | 2 -> 
-            let row = input.Substring(1, 1).ToLowerInvariant() |> int
+            let isNumber, row = input.Substring(1, 1).ToLowerInvariant() |> Int32.TryParse
+            if not isNumber then 
+                invalidArg "input" input "row is not a number" 
             if row < 1 || row > 8 then
-                failwithf "Invalid argument '%s' - row not in range (1-8)" input
+                invalidArg "input" input "row not in range (1-8)"
             8 - (input.Substring(1, 1) |> Int32.Parse) |> byte
-        | _ -> failwithf "Invalid input string length '%s'" input
+        | _ -> invalidArg "input" input "wrong string length '%s'"
 
     let getPosition (pos: byte) =
         if pos >= 64uy then 
-            failwithf "Invalid argument: '%d' not in range (1-64)" pos
+            invalidArg "pos" pos "not in range (1-64)"
         
         let pos = int pos
         let col = pos % 8

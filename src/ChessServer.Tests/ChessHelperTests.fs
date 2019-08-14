@@ -5,13 +5,15 @@ open Xunit
 open ChessServer.ChessHelper
 open TestHelper
 
+let testFunction f input =
+    f input |> testEqual 
+
+
 [<Theory>]
 [<InlineData("a5", 0)>]
 [<InlineData("h5", 7)>]
 [<InlineData("a!", 0)>] //second symbol ignored
-let ``getColumn correctness`` input output =
-    let col = getColumn input
-    Assert.Equal(output, col)
+let ``getColumn correctness`` = testFunction getColumn
 
 [<Theory>]
 [<InlineData("z1")>]
@@ -23,11 +25,11 @@ let ``getColumn correctness`` input output =
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getColumn invalid data`` input =
-    throwsWithMessage "invalid" (fun () -> getColumn input)
+    throwsInvalidArg (fun () -> getColumn input) |> ignore
 
 [<Fact>]
 let ``getColumn null throws`` () =
-    throws<ArgumentNullException>(fun () -> getColumn null |> ignore)
+    throwsNullArg (fun () -> getColumn null |> ignore) |> ignore
 
 
 
@@ -37,9 +39,7 @@ let ``getColumn null throws`` () =
 [<InlineData("a1", 7)>]
 [<InlineData("h8", 0)>]
 [<InlineData("!5", 3)>] //first symbol ignored
-let ``geRow correctness`` input output =
-    let row = getRow input
-    Assert.Equal(output, row)
+let ``geRow correctness`` = testFunction getRow
 
 [<Theory>]
 [<InlineData("z0")>]
@@ -50,11 +50,11 @@ let ``geRow correctness`` input output =
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getRow invalid data`` input =
-    throwsWithMessage "invalid" (fun () -> getRow input)
+    throwsInvalidArg (fun () -> getRow input) |> ignore
 
 [<Fact>]
 let ``getRow null throws`` () =
-    throws<ArgumentNullException>(fun () -> getRow null |> ignore)
+    throwsNullArg (fun () -> getRow null |> ignore) |> ignore
 
 
 
@@ -62,13 +62,11 @@ let ``getRow null throws`` () =
 [<Theory>]
 [<InlineData(0, "a8")>]
 [<InlineData(63, "h1")>]
-let ``getPosition correctness`` input output =
-    let result = getPosition input
-    Assert.Equal(result, output)
+let ``getPosition correctness`` = testFunction getPosition
 
 
 let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =
-    throwsWithMessage "invalid" (fun () -> getPosition input) |> ignore
+    throwsInvalidArg (fun () -> getPosition input) |> ignore
