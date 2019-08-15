@@ -39,7 +39,7 @@ let ``getColumn null throws`` () =
 [<InlineData("a1", 7)>]
 [<InlineData("h8", 0)>]
 [<InlineData("!5", 3)>] //first symbol ignored
-let ``geRow correctness`` = testFunction getRow
+let ``getRow correctness`` = testFunction getRow
 
 [<Theory>]
 [<InlineData("z0")>]

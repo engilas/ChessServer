@@ -5,8 +5,7 @@ module ChessHelper =
     open CommandTypes
     open DomainTypes
     open ChessEngine.Engine
-
-    let invalidArg argName value msg = invalidArg argName <| sprintf "'%A': %s" value msg
+    open Helper
 
     let getColumn (input:string) =
         if input = null then

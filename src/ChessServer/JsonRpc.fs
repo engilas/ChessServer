@@ -1,12 +1,9 @@
 ﻿namespace ChessServer
 
 module JsonRpc =
-    
-
     module private Internal =
         open System.Runtime.Serialization
         open Newtonsoft.Json
-        open System
         open Newtonsoft.Json.Linq
 
         [<DataContract>]
@@ -71,6 +68,7 @@ module JsonRpc =
 
     open Internal
     open CommandTypes
+    open Helper
 
     let serializeNotify notify =
         match notify with
@@ -81,14 +79,14 @@ module JsonRpc =
         | ErrorNotify (method, n) -> serializeErrorNotify method n
         | EndGameNotify n -> serializeNotify "endgame" n
         | SessionCloseNotify n -> serializeNotify "session.close" n
-        | x -> failwithf "unknown notify %A" x
+        | _ -> invalidArg "notify" notify "unknown notify"
 
     let serializeResponse id response =
         match response with
         | PingResponse r -> serializeResponse id r
         | MatchResponse r -> serializeResponse id r
         | ErrorResponse r -> serializeErrorResponse id r
-        | x -> failwithf "unknown command %A" x
+        | _ -> invalidArg "response" response "unknown response"
 
     let deserializeRequest (str:string) =
         let command = deserialize<JsonRpcRequest> str
@@ -102,5 +100,5 @@ module JsonRpc =
             command.Id, ChatCommand (command.Params.ToObject<ChatCommand>())
         | "move" ->
             command.Id, MoveCommand (command.Params.ToObject<MoveCommand>())
-        | x -> failwithf "unknown method %s" x
+        | _ -> invalidArg "str" str "unknown request method"
 
