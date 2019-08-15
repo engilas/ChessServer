@@ -1,13 +1,9 @@
 ﻿module ChessHelperTests
 
-open System
 open Xunit
 open ChessServer.ChessHelper
 open TestHelper
 open FsUnit.Xunit
-
-let inline testFunction<'a> f input (result:'a) =
-    f input |> (fun x -> should equal x result)
 
 
 [<Theory>]

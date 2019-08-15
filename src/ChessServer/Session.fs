@@ -4,6 +4,7 @@ module Session =
     open ChannelTypes
     open DomainTypes
     open CommandTypes
+    open Helper
 
     module private Internal =
         open ChessHelper
@@ -19,11 +20,31 @@ module Session =
             Next: NextMove
         }
 
-        let domainColorMap =
-            function
-            | ChessPieceColor.White -> White
-            | ChessPieceColor.Black -> Black
-            | x -> failwithf "unknown ChessPieceColor value %A" x
+        //вынести мапы в хелпер, покрыть тестами
+
+        let domainColorMap = function
+        | ChessPieceColor.White -> White
+        | ChessPieceColor.Black -> Black
+        | x -> invalidArg "arg" x "unknown ChessPieceColor value"
+
+        let typeMap fst snd x = 
+            [
+                ChessPieceType.King, King
+                ChessPieceType.Queen, Queen
+                ChessPieceType.Rook, Rook
+                ChessPieceType.Bishop, Bishop
+                ChessPieceType.Knight, Knight
+                ChessPieceType.Pawn, Pawn
+            ] |> List.find (fst >> ((=) x)) |> snd
+
+        let fromEngineType = function
+        | None -> None
+        | Some x -> x |> function
+            | ChessPieceType.None -> None
+            | x -> x |> typeMap fst snd |> Some
+
+        let toEngineType = typeMap snd fst
+            
         
         let sessionAgent state = MailboxProcessor<Message>.Start(fun inbox ->
             let rec loop state = async {
@@ -56,7 +77,7 @@ module Session =
                             |> domainColorMap = state.Next
 
                         match move.Command.PawnPromotion with
-                        | Some t -> state.Engine.PromoteToPieceType <- t
+                        | Some t -> state.Engine.PromoteToPieceType <- toEngineType t
                         | None -> state.Engine.PromoteToPieceType <- ChessPieceType.Queen
 
                         if
@@ -65,6 +86,7 @@ module Session =
                             && state.Engine.IsValidMove(colSrc, rowSrc, colDst, rowDst)
                             && state.Engine.MovePiece(colSrc, rowSrc, colDst, rowDst)
                         then
+                            //todo попробоовать избавиться от лямбды getresult - сразу давать значение
                             let ifExists (x:ChessPieceType) getResult =
                                 match x with
                                 | ChessPieceType.None -> None
@@ -85,7 +107,7 @@ module Session =
                             let pawnPromoted = ifExists lastMove.PawnPromotedTo (fun () -> lastMove.PawnPromotedTo)
 
                             replyChannel.Reply Ok
-                            let notify = MoveNotify { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = pawnPromoted }
+                            let notify = MoveNotify { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = fromEngineType pawnPromoted }
                             opponentChannel.PushNotification notify
                             {state with Next = opponentColor}
                         else

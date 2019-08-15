@@ -4,6 +4,7 @@ open ChessServer.JsonRpc
 open Xunit
 open ChessServer.CommandTypes
 open TestHelper
+open FsUnit.Xunit
 
 [<Fact>]
 let ``serializeNotify correctness`` () =
@@ -11,12 +12,12 @@ let ``serializeNotify correctness`` () =
     let notify = {Message=testMsg} |> TestNotify
     let result = serializeNotify notify
 
-    testEqual (sprintf """{
+    sprintf """{
   "method": "test",
   "params": {
     "Message": "%s"
   }
-}""" testMsg) result
+}""" testMsg |> should equal result
 
 [<Fact>]
 let ``serializeResponse correctness`` () =
@@ -25,12 +26,12 @@ let ``serializeResponse correctness`` () =
     let response = {Message=testMsg} |> PingResponse
     let result = serializeResponse id response
 
-    testEqual (sprintf """{
+    sprintf """{
   "result": {
     "Message": "%s"
   },
   "id": %d
-}""" testMsg id) result
+}""" testMsg id |> should equal result
 
 [<Fact>]
 let ``deserializeRequest correctness`` () =
@@ -46,9 +47,7 @@ let ``deserializeRequest correctness`` () =
 }"""        id testMsg
 
     let result = deserializeRequest request
-    let expected = id, PingCommand {Message = testMsg}
-
-    Assert.Equal(expected, result)
+    (id, PingCommand {Message = testMsg}) |> should equal result
 
 [<Fact>]
 let ``deserializeRequest errors`` () =
@@ -62,5 +61,5 @@ let ``deserializeRequest errors`` () =
         "message": "%s"
     }
 }"""        id testMsg
-
-    throwsInvalidArgWithMessage "request" (fun () -> deserializeRequest request) |> ignore
+    
+    (fun () -> deserializeRequest request) |> should (throwWithMessage "request") invalidArgument

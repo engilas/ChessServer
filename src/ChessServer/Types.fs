@@ -3,9 +3,15 @@
 module DomainTypes =
     type Color = White | Black
     type SessionResult = WhiteWin | BlackWin | Draw
+    type PieceType =
+    | King
+    | Queen
+    | Rook
+    | Bishop
+    | Knight
+    | Pawn
 
 module CommandTypes =
-    open ChessEngine.Engine
     open DomainTypes
 
     type Message = { Message:string }
@@ -16,7 +22,7 @@ module CommandTypes =
     type MoveCommand = { 
         From: string
         To: string 
-        PawnPromotion: ChessPieceType option
+        PawnPromotion: PieceType option
     }
 
     type PingResponse = Message
@@ -30,7 +36,7 @@ module CommandTypes =
         Primary: MoveAction
         Secondary: MoveAction option
         TakenPiecePos: string option
-        PawnPromotion: ChessPieceType option
+        PawnPromotion: PieceType option
     }
 
     type EndGameNotify = {
