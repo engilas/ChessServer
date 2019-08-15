@@ -11,8 +11,6 @@ module SocketManager =
     open Microsoft.Extensions.Logging
 
     module private Internal =
-        
-
         let logger = Logging.getLogger "SocketManager"
 
         let rec startNotificator sendNotify (ct: CancellationToken) = async {

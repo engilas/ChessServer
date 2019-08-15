@@ -46,8 +46,6 @@ module CommandProcessor =
                 matcherLoop []
             )
 
-            
-
         open Internal
 
         let startMatch x = Add x |> agent.Post
@@ -129,7 +127,6 @@ module CommandProcessor =
 
     open Internal
     
-
     let createCommandProcessor channel =
         let agent = processAgent channel New processCommand
         let postAndReply x = agent.PostAndAsyncReply(fun channel -> x, channel)
