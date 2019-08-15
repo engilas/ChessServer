@@ -4,9 +4,10 @@ open System
 open Xunit
 open ChessServer.ChessHelper
 open TestHelper
+open FsUnit.Xunit
 
-let testFunction f input =
-    f input |> testEqual 
+let inline testFunction<'a> f input (result:'a) =
+    f input |> (fun x -> should equal x result)
 
 
 [<Theory>]
@@ -25,11 +26,11 @@ let ``getColumn correctness`` = testFunction getColumn
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getColumn invalid data`` input =
-    throwsInvalidArg (fun () -> getColumn input) |> ignore
+    (fun () -> getColumn input) |> should throw invalidArgument
 
 [<Fact>]
 let ``getColumn null throws`` () =
-    throwsNullArg (fun () -> getColumn null |> ignore) |> ignore
+    (fun () -> getColumn null) |> should throw nullArgument
 
 
 
@@ -50,11 +51,11 @@ let ``getRow correctness`` = testFunction getRow
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getRow invalid data`` input =
-    throwsInvalidArg (fun () -> getRow input) |> ignore
+    (fun () -> getRow input) |> should throw invalidArgument
 
 [<Fact>]
 let ``getRow null throws`` () =
-    throwsNullArg (fun () -> getRow null |> ignore) |> ignore
+    (fun () -> getRow null) |> should throw nullArgument
 
 
 
@@ -69,4 +70,4 @@ let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =
-    throwsInvalidArg (fun () -> getPosition input) |> ignore
+    (fun () -> getPosition input) |> should throw invalidArgument
