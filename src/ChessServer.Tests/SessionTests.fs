@@ -12,11 +12,12 @@ let channelStub = {
     PushNotification = fun _ -> ()
     ChangeState = fun _ -> async.Return ()
 }
+let notifyStub = TestNotify {Message=""}
 
 [<Fact>]
 let ``chat check notification`` () =
-    let mutable whiteNotify = TestNotify {Message=""}
-    let mutable blackNotify = TestNotify {Message=""}
+    let mutable whiteNotify = notifyStub
+    let mutable blackNotify = notifyStub
 
     let whiteChannel = { channelStub with PushNotification = fun notify -> whiteNotify <- notify }
     let blackChannel = { channelStub with PushNotification = fun notify -> blackNotify <- notify }
@@ -35,8 +36,8 @@ let ``chat check notification`` () =
 
 [<Fact>]
 let ``close session check notification`` () =
-    let mutable whiteNotify = TestNotify {Message=""}
-    let mutable blackNotify = TestNotify {Message=""}
+    let mutable whiteNotify = notifyStub
+    let mutable blackNotify = notifyStub
 
     let whiteChannel = { channelStub with PushNotification = fun notify -> whiteNotify <- notify }
     let blackChannel = { channelStub with PushNotification = fun notify -> blackNotify <- notify }
@@ -50,7 +51,8 @@ let ``close session check notification`` () =
         From = "a2"
         To = "a4" 
         PawnPromotion = None
-    }
+    } |> ignore
+    ()
     //closeWhite "w"
 
     //let checkNotify msg = function

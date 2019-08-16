@@ -62,4 +62,4 @@ let ``deserializeRequest errors`` () =
     }
 }"""        id testMsg
     
-    (fun () -> deserializeRequest request) |> should (throwWithMessage "request") invalidArgument
+    (fun () -> deserializeRequest request) |> debugCatch |> should (throwWithMessage "request") invalidArgument
