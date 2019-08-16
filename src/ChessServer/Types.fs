@@ -1,6 +1,6 @@
-﻿namespace ChessServer
+﻿namespace Types
 
-module DomainTypes =
+module Domain =
     type Color = White | Black
     type SessionResult = WhiteWin | BlackWin | Draw
     type PieceType =
@@ -11,8 +11,8 @@ module DomainTypes =
     | Knight
     | Pawn
 
-module CommandTypes =
-    open DomainTypes
+module Command =
+    open Domain
 
     type Message = { Message:string }
     type MoveAction = { From: string; To: string }
@@ -70,9 +70,9 @@ module CommandTypes =
     | EndGameNotify of EndGameNotify
     | SessionCloseNotify of Message
 
-module ChannelTypes =
-    open DomainTypes
-    open CommandTypes
+module Channel =
+    open Domain
+    open Command
 
     type Move = {
         Source: Color
@@ -94,5 +94,5 @@ module ChannelTypes =
     type ClientChannel = {
         Id: string
         PushNotification: Notify -> unit
-        ChangeState: ClientState -> Async<unit>
+        ChangeState: ClientState -> unit
     }

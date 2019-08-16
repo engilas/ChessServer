@@ -1,8 +1,8 @@
 ﻿module SerializeTests
 
-open ChessServer.JsonRpc
+open JsonRpc
 open Xunit
-open ChessServer.CommandTypes
+open Types.Command
 open TestHelper
 open FsUnit.Xunit
 

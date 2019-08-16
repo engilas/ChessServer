@@ -1,16 +1,16 @@
 ﻿module SessionTests
 
-open ChessServer.Session
-open ChessServer.ChannelTypes
+open Session
+open Types.Channel
 open FsUnit.Xunit
-open ChessServer.CommandTypes
+open Types.Command
 open Xunit
 open TestHelper
 
 let channelStub = {
     Id = ""
     PushNotification = fun _ -> ()
-    ChangeState = fun _ -> async.Return ()
+    ChangeState = fun _ -> ()
 }
 let notifyStub = TestNotify {Message=""}
 

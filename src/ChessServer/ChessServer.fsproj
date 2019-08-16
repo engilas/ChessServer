@@ -15,13 +15,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Infrastructure\IocManager.fs" />
+    <Compile Include="Infrastructure\Logging.fs" />
     <Compile Include="Helper.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="ChessHelper.fs" />
-    <Compile Include="Session.fs" />
-    <Compile Include="Logging.fs" />
+    <Compile Include="Session\SessionTypes.fs" />
+    <Compile Include="Session\SessionAgent.fs" />
+    <Compile Include="Session\Session.fs" />
     <Compile Include="IdiomaticDuConverter.fs" />
     <Compile Include="JsonRpc.fs" />
+    <Compile Include="MatchManager.fs" />
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="SocketManager.fs" />
     <Compile Include="WebSocketMiddleware.fs" />

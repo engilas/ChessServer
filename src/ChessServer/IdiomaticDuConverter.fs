@@ -6,7 +6,7 @@ open System
 
 type IdiomaticDuConverter() = 
     inherit JsonConverter()
-    
+
     [<Literal>]
     let discriminator = "__Case"
     let primitives = Set [ JsonToken.Boolean; JsonToken.Date; JsonToken.Float; JsonToken.Integer; JsonToken.Null; JsonToken.String ]

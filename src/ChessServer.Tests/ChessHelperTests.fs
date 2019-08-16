@@ -1,7 +1,7 @@
 ﻿module ChessHelperTests
 
 open Xunit
-open ChessServer.ChessHelper
+open ChessHelper
 open TestHelper
 open FsUnit.Xunit
 open System

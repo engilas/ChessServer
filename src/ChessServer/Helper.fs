@@ -1,4 +1,3 @@
-﻿namespace ChessServer
+﻿module Helper
 
-module Helper =
-    let invalidArg argName value msg = invalidArg argName <| sprintf "'%A': %s" value msg
+let invalidArg argName value msg = invalidArg argName <| sprintf "'%A': %s" value msg
