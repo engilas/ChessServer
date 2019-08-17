@@ -4,7 +4,6 @@ open Xunit
 open ChessHelper
 open TestHelper
 open FsUnit.Xunit
-open System
 
 [<Theory>]
 [<InlineData("a5", 0)>]

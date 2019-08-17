@@ -20,9 +20,15 @@ let createSession whitePlayer blackPlayer =
 
     let agent = sessionAgent state
     let createMoveFun color command = 
-        agent.PostAndAsyncReply(fun a -> Regular ({Source=color; Command = command}, a))
+        agent.PostAndAsyncReply(fun channel -> Regular ({Source=color; Command = command}, channel))
 
     let push channel msg = ChatNotify {Message = msg} |> channel.PushNotification
+
+    let checkStatus x =
+        let state = agent.PostAndReply(fun channel -> GetState channel)
+        match state.Status with
+        | Terminated -> sessionError SessionTerminated
+        | _ -> x
 
     let chatFun color msg =
         match color with
@@ -30,18 +36,21 @@ let createSession whitePlayer blackPlayer =
         | Black -> push whitePlayer msg
 
     let closeFun color msg =
-        let closeInternal channel = 
-            channel.ChangeState New |> ignore
+        let notify channel = 
             SessionCloseNotify {Message = sprintf "Session closed with reason: %s" msg} |> channel.PushNotification
 
+        whitePlayer.ChangeState New |> ignore
+        blackPlayer.ChangeState New |> ignore
+        agent.Post Terminate
+
         match color with 
-        | White -> closeInternal blackPlayer
-        | Black -> closeInternal whitePlayer
+        | White -> notify blackPlayer
+        | Black -> notify whitePlayer
 
     let whiteSession = {
-        CreateMove = createMoveFun White
-        ChatMessage = chatFun White
-        CloseSession = closeFun White
+        CreateMove = checkStatus >> (createMoveFun White)
+        ChatMessage = checkStatus >> chatFun White
+        CloseSession = checkStatus >> closeFun White
     }
 
     let blackSession = {

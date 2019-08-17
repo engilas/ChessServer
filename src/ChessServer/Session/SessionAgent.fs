@@ -7,14 +7,15 @@ open ChessHelper
 open Types.Domain
 open Types.Channel
 open Types.Command
+open Types
 
 [<AutoOpen>]
 module private Internal =
     //todo test mappers
     let domainColorMap = function
-        | ChessPieceColor.White -> White
-        | ChessPieceColor.Black -> Black
-        | x -> invalidArg "arg" x "unknown ChessPieceColor value"
+    | ChessPieceColor.White -> White
+    | ChessPieceColor.Black -> Black
+    | x -> invalidArg "arg" x "unknown ChessPieceColor value"
 
     let typeMap fst snd x = 
         [
@@ -103,7 +104,7 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
             state
 
     match checkEndGame state.Engine with
-    | None -> Some state
+    | None -> state
     | Some (result, reason) -> 
         let endGameNotify = EndGameNotify {
             Result = result
@@ -113,19 +114,20 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
         state.BlackPlayer.ChangeState New
         state.WhitePlayer.PushNotification endGameNotify
         state.BlackPlayer.PushNotification endGameNotify
-        None
+        {state with Status = Terminated}
 
 let sessionAgent state = MailboxProcessor<SessionMessage>.Start(fun inbox ->
     let rec loop state = async {
         let! message = inbox.Receive()
+
         let nextState = 
             match message with
-            | Terminate -> None
             | Regular (move, replyChannel) ->
                 processRegular state move replyChannel
-        match nextState with
-        | Some state -> return! loop state
-        | None -> ()
+            | GetState channel -> channel.Reply state; state
+            | Terminate -> {state with Status = Terminated}
+        
+        return! loop nextState
     }
     loop state
 )

@@ -4,9 +4,12 @@ open Types.Channel
 open ChessEngine.Engine
 open Types.Domain
 
-type SessionMessage =
-    | Regular of Move * AsyncReplyChannel<MoveResult>
-    | Terminate
+type SessionError =
+    | SessionTerminated
+
+exception SessionException of SessionError
+
+let sessionError error = raise (SessionException error)
 
 type SessionStatus = Active | Terminated
 
@@ -17,3 +20,8 @@ type SessionState = {
     Next: Color
     Status: SessionStatus
 }
+
+type SessionMessage =
+    | Regular of Move * AsyncReplyChannel<MoveResult>
+    | GetState of AsyncReplyChannel<SessionState>
+    | Terminate
