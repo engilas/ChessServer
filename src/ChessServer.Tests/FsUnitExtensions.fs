@@ -3,13 +3,18 @@ module FsUnit.Xunit
 
 open System
 open NHamcrest.Core
+open System.Reflection
+open System.Runtime.ExceptionServices
 
 let private call (f: obj) =
     match f with
     | :? (unit -> unit) as testFunc -> testFunc()
     | _ -> 
         let method = f.GetType().GetMethod("Invoke")
-        method.Invoke(f, null) |> ignore
+        try
+            method.Invoke(f, [| () :> obj |]) |> ignore
+        with :? TargetInvocationException as e ->
+            ExceptionDispatchInfo.Capture(e.InnerException).Throw()
         ()
     false
 

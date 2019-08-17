@@ -22,11 +22,11 @@ let ``getColumn correctness`` = testFunction getColumn
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getColumn invalid data`` input =
-    (fun () -> getColumn input |> ignore) |> should throw invalidArgument
+    (fun () -> getColumn input) |> should throw invalidArgument
 
 [<Fact>]
 let ``getColumn null throws`` () =
-    (fun () -> getColumn null |> ignore) |> should throw nullArgument
+    (fun () -> getColumn null) |> should throw nullArgument
 
 
 
@@ -47,11 +47,11 @@ let ``getRow correctness`` = testFunction getRow
 [<InlineData("1")>]
 [<InlineData("1bx")>]
 let ``getRow invalid data`` input =
-    (fun () -> getRow input |> ignore) |> should throw invalidArgument
+    (fun () -> getRow input) |> should throw invalidArgument
 
 [<Fact>]
 let ``getRow null throws`` () =
-    (fun () -> getRow null |> ignore) |> should throw nullArgument
+    (fun () -> getRow null) |> should throw nullArgument
 
 
 
@@ -66,4 +66,4 @@ let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =
-    (fun () -> getPosition input |> ignore) |> should throw invalidArgument
+    (fun () -> getPosition input) |> should throw invalidArgument
