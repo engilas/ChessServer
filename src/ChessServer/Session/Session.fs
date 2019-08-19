@@ -47,19 +47,12 @@ let createSession whitePlayer blackPlayer =
         | White -> notify blackPlayer
         | Black -> notify whitePlayer
 
-    let whiteSession = {
-        CreateMove = checkStatus >> (createMoveFun White)
-        ChatMessage = checkStatus >> chatFun White
-        CloseSession = checkStatus >> closeFun White
+    let createSession color = {
+        CreateMove = checkStatus >> (createMoveFun color)
+        ChatMessage = checkStatus >> chatFun color
+        CloseSession = checkStatus >> closeFun color
     }
-
-    let blackSession = {
-        CreateMove = createMoveFun Black
-        ChatMessage = chatFun Black
-        CloseSession = closeFun Black
-    }
-
-    whiteSession, blackSession
+    createSession White, createSession Black
 
 
 

@@ -79,9 +79,12 @@ let ``close session check notification`` () =
     
     let whiteChannel, whiteNotify, _, _ = channelInfo()
     let blackChannel, blackNotify, _, _ = channelInfo()
+    let createSession() = createSession whiteChannel blackChannel
 
-    let sw, sb = createSession whiteChannel blackChannel
+    let sw, _ = createSession()
     checkInternal sw blackNotify "white"
+    
+    let _, sb = createSession()
     checkInternal sb whiteNotify "black"
     
 [<Fact>]
@@ -89,7 +92,7 @@ let ``close session check new state`` () =
     // setup
     let whiteChannel, _, whiteState, _ = channelInfo()
     let blackChannel, _, blackState, _ = channelInfo()
-    let createSession = createSession whiteChannel blackChannel
+    let createSession() = createSession whiteChannel blackChannel
     let resetStates() = 
         [whiteChannel.ChangeState; blackChannel.ChangeState]
         |> applyMany Matching
@@ -103,14 +106,14 @@ let ``close session check new state`` () =
 
     // assert
     // white
-    let sw, _ = createSession
+    let sw, _ = createSession()
     testAction sw
 
     //black
-    let _, sb = createSession
+    let _, sb = createSession()
     testAction sb
 
-
+let 
     //s1.ChatMessage "gg"
     //s1.CreateMove {
     //    From = "a2"
