@@ -36,6 +36,13 @@ module Internal =
         loop initState
     )
 
+    let parseMoveError error = 
+        match error with
+        | NotYourTurn -> "Not your turn"
+        | InvalidMove -> "Invalid move"
+        | InvalidInput msg -> sprintf "Invalid input parameter: %s" msg
+        | _ -> invalidArg "error" (sprintf "unknown error %A" error)
+
     let processCommand cmd channel (state: ClientState) = async {
         let getErrorResponse msg = Some <| ErrorResponse {Message=msg}
         let changeState x = channel.ChangeState x |> ignore //avoid dead lock in mailbox
@@ -66,7 +73,7 @@ module Internal =
                     let! result = session.CreateMove move
                     match result with
                     | Ok -> return None
-                    | Error msg -> return getErrorResponse <| sprintf "Move error: %s" msg
+                    | x -> return getErrorResponse <| sprintf "Move error: %s" (parseMoveError x)
                 | _ -> return getInvalidStateError "Not matched"
             | DisconnectCommand ->
                 match state with

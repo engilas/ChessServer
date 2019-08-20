@@ -6,6 +6,7 @@ open Types.Domain
 
 type SessionError =
     | SessionTerminated
+    | AgentError of string
 
 exception SessionException of SessionError
 

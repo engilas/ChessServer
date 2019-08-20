@@ -78,7 +78,13 @@ module Channel =
         Source: Color
         Command: MoveCommand
     }
-    type MoveResult = Ok | Error of string
+
+    type MoveResult = 
+    | Ok
+    | NotYourTurn
+    | InvalidMove
+    | InvalidInput of string
+    | Other of string
 
     type Session = {
         CreateMove: MoveCommand -> Async<MoveResult>

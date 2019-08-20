@@ -10,7 +10,9 @@
   <ItemGroup>
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
-    <Compile Include="SessionTests.fs" />
+    <Compile Include="Session\SessionBase.fs" />
+    <Compile Include="Session\SessionMoveTests.fs" />
+    <Compile Include="Session\SessionStuffTests.fs" />
     <Compile Include="SerializeTests.fs" />
     <Compile Include="ChessHelperTests.fs" />
     <Compile Include="Program.fs" />

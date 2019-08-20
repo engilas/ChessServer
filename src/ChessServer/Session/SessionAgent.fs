@@ -7,10 +7,13 @@ open ChessHelper
 open Types.Domain
 open Types.Channel
 open Types.Command
-open Types
+open Microsoft.Extensions.Logging
+open System
 
 [<AutoOpen>]
 module private Internal =
+    let logger = Logging.getLogger "SessionAgent"
+
     //todo test mappers
     let domainColorMap = function
     | ChessPieceColor.White -> White
@@ -49,10 +52,16 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
     let state =
         if move.Source = state.Next then
 
-            let colSrc = getColumn move.Command.From
-            let rowSrc = getRow move.Command.From
-            let colDst = getColumn move.Command.To
-            let rowDst = getRow move.Command.To
+            let wrapParse f x source =
+                try f x
+                with | :? ArgumentException ->
+                    replyChannel.Reply <| InvalidInput source
+                    sessionError <| AgentError (sprintf "Can't parse argument %s with value %s" source x)
+
+            let colSrc = wrapParse getColumn move.Command.From "From"
+            let rowSrc = wrapParse getRow move.Command.From "From"
+            let colDst = wrapParse getColumn move.Command.To "To"
+            let rowDst = wrapParse getRow move.Command.To "To"
 
             let pieceExists = state.Engine.GetPieceTypeAt(colSrc, rowSrc) <> ChessPieceType.None
 
@@ -97,10 +106,10 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
                 opponentChannel.PushNotification notify
                 {state with Next = opponentColor}
             else
-                replyChannel.Reply (Error "Invalid move")
+                replyChannel.Reply InvalidMove
                 state
         else
-            replyChannel.Reply (Error "Not your turn")
+            replyChannel.Reply NotYourTurn
             state
 
     match checkEndGame state.Engine with
@@ -118,16 +127,19 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
 
 let sessionAgent state = MailboxProcessor<SessionMessage>.Start(fun inbox ->
     let rec loop state = async {
-        let! message = inbox.Receive()
-
-        let nextState = 
-            match message with
-            | Regular (move, replyChannel) ->
-                processRegular state move replyChannel
-            | GetState channel -> channel.Reply state; state
-            | Terminate -> {state with Status = Terminated}
+        try 
+            let! message = inbox.Receive()
+            let nextState = 
+                match message with
+                | Regular (move, replyChannel) ->
+                    processRegular state move replyChannel
+                | GetState channel -> channel.Reply state; state
+                | Terminate -> {state with Status = Terminated}
         
-        return! loop nextState
+            return! loop nextState
+        with e ->
+            logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
+            return! loop state
     }
     loop state
 )

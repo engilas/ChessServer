@@ -6,9 +6,11 @@ open Types.Command
 open SessionTypes
 open ChessEngine.Engine
 open SessionAgent
+open System
 
-let createSession whitePlayer blackPlayer =
-    let engine = Engine()
+let createSessionWithFen fen whitePlayer blackPlayer =
+    
+    let engine = if String.IsNullOrWhiteSpace(fen) then Engine() else Engine(fen)
 
     let state = {
         Engine = engine
@@ -54,5 +56,5 @@ let createSession whitePlayer blackPlayer =
     }
     createSession White, createSession Black
 
-
+let createSession = createSessionWithFen null
 
