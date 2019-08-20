@@ -138,7 +138,13 @@ let sessionAgent state = MailboxProcessor<SessionMessage>.Start(fun inbox ->
         
             return! loop nextState
         with e ->
-            logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
+            try
+                logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
+            with e2 ->
+                let a = 5
+                let b = a + 3
+                ()
+            
             return! loop state
     }
     loop state
