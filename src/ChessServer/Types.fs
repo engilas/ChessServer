@@ -87,7 +87,7 @@ module Channel =
     | Other of string
 
     type Session = {
-        CreateMove: MoveCommand -> Async<MoveResult>
+        CreateMove: MoveCommand -> MoveResult
         ChatMessage: string -> unit
         CloseSession: string -> unit
     }

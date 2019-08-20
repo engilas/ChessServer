@@ -20,15 +20,14 @@ module Internal =
         let rec loop state = async {
             let! command, replyChannel = inbox.Receive()
 
-            let! response, newState = async {
+            let response, newState = 
                 match command with
                 | Regular (cmd, channel) -> 
-                    let! response = processFun cmd channel state
-                    return (response, state)
+                    let response = processFun cmd channel state
+                    (response, state)
                 | ChangeState newState ->
                     logger.LogInformation("Channel {0} changed state to {1}", channelId, newState)
-                    return (None, newState)
-            }
+                    (None, newState)
 
             replyChannel.Reply response
             return! loop newState
@@ -43,7 +42,7 @@ module Internal =
         | InvalidInput msg -> sprintf "Invalid input parameter: %s" msg
         | _ -> invalidArg "error" (sprintf "unknown error %A" error)
 
-    let processCommand cmd channel (state: ClientState) = async {
+    let processCommand cmd channel (state: ClientState) = 
         let getErrorResponse msg = Some <| ErrorResponse {Message=msg}
         let changeState x = channel.ChangeState x |> ignore //avoid dead lock in mailbox
         let getInvalidStateError error =
@@ -53,40 +52,41 @@ module Internal =
         try
             match cmd with
             | PingCommand ping -> 
-                return Some <| PingResponse {Message=ping.Message}
+                Some <| PingResponse {Message=ping.Message}
             | MatchCommand ->
                 match state with
                 | New ->
                     startMatch channel
                     changeState Matching
-                    return Some <| MatchResponse {Message="match started"}
-                | _ -> return getInvalidStateError "Already matched"
+                    Some <| MatchResponse {Message="match started"}
+                | _ -> getInvalidStateError "Already matched"
             | ChatCommand chat ->
                 match state with
                 | Matched session -> 
                     session.ChatMessage chat.Message
-                    return None
-                | _ -> return getInvalidStateError "Not matched"
+                    None
+                | _ -> getInvalidStateError "Not matched"
             | MoveCommand move ->
                 match state with
                 | Matched session ->
-                    let! result = session.CreateMove move
+                    let result = session.CreateMove move
                     match result with
-                    | Ok -> return None
-                    | x -> return getErrorResponse <| sprintf "Move error: %s" (parseMoveError x)
-                | _ -> return getInvalidStateError "Not matched"
+                    | Ok -> None
+                    | x -> getErrorResponse <| sprintf "Move error: %s" (parseMoveError x)
+                | _ -> getInvalidStateError "Not matched"
             | DisconnectCommand ->
                 match state with
                 | Matching -> stopMatch channel
                 | Matched session -> session.CloseSession "Player disconnected"
-                return None
+                | _ -> ()
+                None
             | x ->
                 failwithf "no processor for the command %A" x
-                return None
+                None
         with e ->
             logger.LogError(e, "Error occurred while processing command")
-            return getErrorResponse <| sprintf "Internal error: %s" e.Message
-    }
+            getErrorResponse <| sprintf "Internal error: %s" e.Message
+    
 
 open Internal
     

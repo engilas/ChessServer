@@ -22,7 +22,7 @@ let createSessionWithFen fen whitePlayer blackPlayer =
 
     let agent = sessionAgent state
     let createMoveFun color command = 
-        agent.PostAndAsyncReply(fun channel -> Regular ({Source=color; Command = command}, channel))
+        agent.PostAndReply(fun channel -> Regular ({Source=color; Command = command}, channel))
 
     let push channel msg = ChatNotify {Message = msg} |> channel.PushNotification
 

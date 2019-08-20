@@ -94,23 +94,4 @@ let ``close session check exception on any function calls`` () =
     checkAnyFunctionThrows sw
     checkAnyFunctionThrows sb
 
-[<Theory>]
-[<InlineData("a2x")>]
-[<InlineData("a")>]
-[<InlineData("22")>]
-let ``move error - invalid value`` data =
-    let checkMoveError source move = async {
-        let channels = channelInfo()
-        let sw, _ = channels.CreateSession()
 
-        let! result = sw.CreateMove move
-
-        match result with
-        | InvalidInput msg -> msg |> should haveSubstring source
-        | _ -> failTest "wrong move result"
-    }
-
-    async {
-        do! checkMoveError "From" {moveStub with From = data; To = "a4"}
-        do! checkMoveError "To" {moveStub with From = "a4"; To = data}
-    }

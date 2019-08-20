@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ContentModelStore">
     <e p="C:\Users\Alexandr\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.reporters.netcoreapp10.dll" t="Include" />
@@ -48,7 +48,11 @@
         <e p="obj" t="ExcludeRecursive" />
         <e p="Program.fs" t="Include" />
         <e p="SerializeTests.fs" t="Include" />
-        <e p="SessionTests.fs" t="Include" />
+        <e p="Session" t="Include">
+          <e p="SessionBase.fs" t="Include" />
+          <e p="SessionMoveTests.fs" t="Include" />
+          <e p="SessionStuffTests.fs" t="Include" />
+        </e>
         <e p="TestHelper.fs" t="Include" />
       </e>
       <e p="packages" t="ExcludeRecursive" />
