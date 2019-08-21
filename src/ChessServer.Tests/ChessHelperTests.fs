@@ -61,7 +61,7 @@ let ``getRow null throws`` () =
 let ``getPosition correctness`` = testFunction getPosition
 
 
-let positionRange() = seq {64uy..255uy} |> Seq.map (fun x -> [| x :> obj |])
+let positionRange() = seq {64uy..255uy} |> toObjectSeq
 [<Theory>]
 [<MemberData("positionRange")>]
 let ``getPosition check range`` input =

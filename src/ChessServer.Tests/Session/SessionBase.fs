@@ -88,4 +88,4 @@ let channelInfo () =
         CreateSession = fun () -> createSession wChannel bChannel
     }
 
-let channels = channelInfo()
+let getMove from _to = {moveStub with From = from; To = _to}

@@ -11,6 +11,7 @@
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
     <Compile Include="Session\SessionBase.fs" />
+    <Compile Include="Session\SessionTestData.fs" />
     <Compile Include="Session\SessionMoveTests.fs" />
     <Compile Include="Session\SessionStuffTests.fs" />
     <Compile Include="SerializeTests.fs" />

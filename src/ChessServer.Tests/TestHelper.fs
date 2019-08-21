@@ -18,3 +18,5 @@ let debugCatch f =
     try f() |> ignore with e ->
         ()
     f
+
+let toObjectSeq arg = arg |> Seq.map (fun x -> [| x :> obj |])
