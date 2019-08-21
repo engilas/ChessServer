@@ -73,11 +73,11 @@ open Helper
 let serializeNotify notify =
     match notify with
     | TestNotify n -> serializeNotify "test" n
-    | MatchNotify n -> serializeNotify "match" n
     | ChatNotify n -> serializeNotify "chat" n
     | MoveNotify n -> serializeNotify "move" n
     | ErrorNotify (method, n) -> serializeErrorNotify method n
     | EndGameNotify n -> serializeNotify "endgame" n
+    | SessionStartNotify n -> serializeNotify "session.start" n
     | SessionCloseNotify n -> serializeNotify "session.close" n
     | _ -> invalidArg "notify" notify "unknown notify"
 

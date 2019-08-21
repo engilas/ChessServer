@@ -4,6 +4,7 @@
 module private Internal =
     open Types.Channel
     open Types.Command
+    open Types.Domain
     open Microsoft.Extensions.Logging
     open Session
 
@@ -22,7 +23,7 @@ module private Internal =
                     let whiteSession, blackSession = createSession first second
                     first.ChangeState <| Matched whiteSession
                     second.ChangeState <| Matched blackSession
-                    let notify = MatchNotify {Message = "matched"}
+                    let notify = SessionStartNotify {FirstMove = White}
                     first.PushNotification notify
                     second.PushNotification notify
                     return lst

@@ -30,7 +30,9 @@ module Command =
 
     type TestNotify = Message
     type ChatNotify = Message
-    type MatchNotify = Message
+    type SessionStartNotify = {
+        FirstMove: Color
+    }
 
     type MoveNotify = { 
         Primary: MoveAction
@@ -64,10 +66,10 @@ module Command =
     type Notify =
     | TestNotify of TestNotify
     | ErrorNotify of Method * ErrorNotify
-    | MatchNotify of MatchNotify
     | ChatNotify of ChatNotify
     | MoveNotify of MoveNotify
     | EndGameNotify of EndGameNotify
+    | SessionStartNotify of SessionStartNotify
     | SessionCloseNotify of Message
 
 module Channel =
