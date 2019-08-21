@@ -52,6 +52,7 @@
           <e p="SessionBase.fs" t="Include" />
           <e p="SessionMoveTests.fs" t="Include" />
           <e p="SessionStuffTests.fs" t="Include" />
+          <e p="SessionTestData.fs" t="Include" />
         </e>
         <e p="TestHelper.fs" t="Include" />
       </e>

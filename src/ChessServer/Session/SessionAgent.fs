@@ -37,6 +37,16 @@ module private Internal =
         | x -> x |> typeMap fst snd |> Some
 
     let toEngineType = typeMap snd fst
+    
+    let getMoveAction (x: PieceMoving) = 
+        let src = getPosition x.SrcPosition
+        let dst = getPosition x.DstPosition
+        moveAction src dst
+        
+    let ifExists (x:ChessPieceType) value =
+        match x with
+        | ChessPieceType.None -> None
+        | _ -> Some <| value
 
 let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult>) = 
     let opponentColor =
@@ -81,25 +91,14 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
                 && state.Engine.IsValidMove(colSrc, rowSrc, colDst, rowDst)
                 && state.Engine.MovePiece(colSrc, rowSrc, colDst, rowDst)
             then
-                //todo попробоовать избавиться от лямбды getresult - сразу давать значение
-                let ifExists (x:ChessPieceType) getResult =
-                    match x with
-                    | ChessPieceType.None -> None
-                    | _ -> Some <| getResult()
-
                 let lastMove = state.Engine.LastMove
-                let takenPiece = 
-                    ifExists lastMove.TakenPiece.PieceType (fun () -> getPosition lastMove.TakenPiece.Position)
-
-                let getMoveAction (x: PieceMoving) = 
-                    let src = getPosition x.SrcPosition
-                    let dst = getPosition x.DstPosition
-                    moveAction src dst
+                let takenPiece = ifExists lastMove.TakenPiece.PieceType
+                                 <| getPosition lastMove.TakenPiece.Position
+                    
                 let move = getMoveAction lastMove.MovingPiecePrimary
-                let secondMove = 
-                    ifExists lastMove.MovingPieceSecondary.PieceType (fun () -> getMoveAction lastMove.MovingPieceSecondary)
-
-                let pawnPromoted = ifExists lastMove.PawnPromotedTo (fun () -> lastMove.PawnPromotedTo)
+                let secondMove = ifExists lastMove.MovingPieceSecondary.PieceType
+                                 <| getMoveAction lastMove.MovingPieceSecondary
+                let pawnPromoted = ifExists lastMove.PawnPromotedTo lastMove.PawnPromotedTo
 
                 replyChannel.Reply Ok
                 let notify = MoveNotify { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = fromEngineType pawnPromoted }
