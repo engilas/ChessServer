@@ -19,8 +19,18 @@ let createSessionWithFen fen whitePlayer blackPlayer =
         Next = White
         Status = Active
     }
+    
+    let onEndGame result reason =
+        let endGameNotify = EndGameNotify {
+            Result = result
+            Reason = reason
+        }
+        whitePlayer.ChangeState New
+        blackPlayer.ChangeState New
+        whitePlayer.PushNotification endGameNotify
+        blackPlayer.PushNotification endGameNotify
 
-    let agent = sessionAgent state
+    let agent = createSessionAgent state onEndGame
     let createMoveFun color command = 
         agent.PostAndReply(fun channel -> Regular ({Source=color; Command = command}, channel))
 

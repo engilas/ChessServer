@@ -78,7 +78,7 @@ let processConnection (connection: WebSocket) connectionId = async {
         | false -> 
             try
                 let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
-                printfn "%s" msg
+                printfn "%s" msg // todo replace to logger
                 let id, command = JsonRpc.deserializeRequest msg
                 let! response = processCommand command clientChannel
                 match response with

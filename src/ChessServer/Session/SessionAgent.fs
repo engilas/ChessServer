@@ -46,9 +46,9 @@ module private Internal =
     let ifExists (x:ChessPieceType) value =
         match x with
         | ChessPieceType.None -> None
-        | _ -> Some <| value
+        | _ -> Some value
 
-let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult>) = 
+let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult>) onEndGame = 
     let opponentColor =
         match state.Next with
         | White -> Black
@@ -113,25 +113,18 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
 
     match checkEndGame state.Engine with
     | None -> state
-    | Some (result, reason) -> 
-        let endGameNotify = EndGameNotify {
-            Result = result
-            Reason = reason
-        }
-        state.WhitePlayer.ChangeState New
-        state.BlackPlayer.ChangeState New
-        state.WhitePlayer.PushNotification endGameNotify
-        state.BlackPlayer.PushNotification endGameNotify
+    | Some (result, reason) ->
+        onEndGame result reason
         {state with Status = Terminated}
 
-let sessionAgent state = MailboxProcessor<SessionMessage>.Start(fun inbox ->
+let createSessionAgent state onEndGame = MailboxProcessor<SessionMessage>.Start(fun inbox ->
     let rec loop state = async {
         let! message = inbox.Receive()
         let nextState = 
             try 
                 match message with
                 | Regular (move, replyChannel) ->
-                    processRegular state move replyChannel
+                    processRegular state move replyChannel onEndGame
                 | GetState channel -> channel.Reply state; state
                 | Terminate -> {state with Status = Terminated}
             with e ->

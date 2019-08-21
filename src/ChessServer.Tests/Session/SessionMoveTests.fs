@@ -62,14 +62,14 @@ let ``move error - invalid value`` data =
     checkMoveError "To" "a4" data
 
 [<Fact>]
-let ``move error - not your turn (black)`` () =
+let ``move error - not your turn - black`` () =
     let channels = channelInfo()
     let _, sb = channels.CreateSession()
     let result = sb.CreateMove correctBlackMove
     checkNotYourTurn result
 
 [<Fact>]
-let ``move error - not your turn (white)`` () =
+let ``move error - not your turn - white`` () =
     let channels = channelInfo()
     let sw, _ = channels.CreateSession()
     makeValidMove2 sw "a2" "a4" 
@@ -78,15 +78,34 @@ let ``move error - not your turn (white)`` () =
 
 [<Theory>]
 [<MemberData("validBlackMovesData")>]
-let ``move error - invalid move (white)`` data =
+let ``move error - invalid move - white`` data =
     let channels = channelInfo()
     let sw, _ = channels.CreateSession()
     sw.CreateMove data |> checkInvalidMove
 
 [<Theory>]
 [<MemberData("validWhiteMovesData")>]
-let ``move error - invalid move (black)`` data =
+let ``move error - invalid move - black`` data =
     let channels = channelInfo()
     let sw, sb = channels.CreateSession()
     makeValidMove sw <| correctWhiteMove
     sb.CreateMove data |> checkInvalidMove
+    
+[<Theory>]
+[<InlineData("a2", "b2")>]
+[<InlineData("a2", "b3")>]
+[<InlineData("a3", "a4")>]
+let ``move error - invalid move 2 - white`` src dst =
+    let channels = channelInfo()
+    let sw, _ = channels.CreateSession()
+    getMove src dst |> sw.CreateMove |> checkInvalidMove
+    
+[<Theory>]
+[<InlineData("a7", "b7")>]
+[<InlineData("a7", "b6")>]
+[<InlineData("a6", "a5")>]
+let ``move error - invalid move 2 - black`` src dst =
+    let channels = channelInfo()
+    let sw, sb = channels.CreateSession()
+    makeValidMove sw <| correctWhiteMove
+    getMove src dst |> sb.CreateMove |> checkInvalidMove

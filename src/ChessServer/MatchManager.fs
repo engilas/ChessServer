@@ -16,7 +16,7 @@ module private Internal =
 
     let agent = MailboxProcessor.Start(fun inbox -> 
         let rec matcherLoop channels = async {
-            let! channels = async {
+            let channels = 
                 match channels with
                 | first::second::lst -> 
                     logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
@@ -26,9 +26,8 @@ module private Internal =
                     let notify = SessionStartNotify {FirstMove = White}
                     first.PushNotification notify
                     second.PushNotification notify
-                    return lst
-                | lst -> return lst
-            }
+                    lst
+                | lst -> lst
 
             let! command = inbox.Receive()
 
