@@ -127,25 +127,20 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
 
 let sessionAgent state = MailboxProcessor<SessionMessage>.Start(fun inbox ->
     let rec loop state = async {
-        try 
-            let! message = inbox.Receive()
-            let nextState = 
+        let! message = inbox.Receive()
+        let nextState = 
+            try 
                 match message with
                 | Regular (move, replyChannel) ->
                     processRegular state move replyChannel
                 | GetState channel -> channel.Reply state; state
                 | Terminate -> {state with Status = Terminated}
-        
-            return! loop nextState
-        with e ->
-            try
+            with e ->
+                // todo: не вылетит ли исключение при форматтинге %A (уже вылетало)
                 logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
-            with e2 ->
-                let a = 5
-                let b = a + 3
-                ()
-            
-            return! loop state
+                state
+        
+        return! loop nextState
     }
     loop state
 )

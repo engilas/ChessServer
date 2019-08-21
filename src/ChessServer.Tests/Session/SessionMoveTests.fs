@@ -22,6 +22,10 @@ let checkNotYourTurn = function
 | NotYourTurn -> ()
 | _ -> failTest "wrong move result"
 
+let checkInvalidMove = function
+| InvalidMove -> ()
+| _ -> failTest "wrong move result"
+
 let validWhiteMovesData() = validWhiteMovesData()
 let validBlackMovesData() = validBlackMovesData()
 
@@ -71,3 +75,18 @@ let ``move error - not your turn (white)`` () =
     makeValidMove2 sw "a2" "a4" 
     let result = sw.CreateMove correctWhiteMove
     checkNotYourTurn result
+
+[<Theory>]
+[<MemberData("validBlackMovesData")>]
+let ``move error - invalid move (white)`` data =
+    let channels = channelInfo()
+    let sw, _ = channels.CreateSession()
+    sw.CreateMove data |> checkInvalidMove
+
+[<Theory>]
+[<MemberData("validWhiteMovesData")>]
+let ``move error - invalid move (black)`` data =
+    let channels = channelInfo()
+    let sw, sb = channels.CreateSession()
+    makeValidMove sw <| correctWhiteMove
+    sb.CreateMove data |> checkInvalidMove

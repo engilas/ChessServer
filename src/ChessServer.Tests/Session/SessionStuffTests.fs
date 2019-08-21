@@ -1,4 +1,4 @@
-﻿module SessionTests
+﻿module SessionStuffTests
 
 open Types.Channel
 open FsUnit.Xunit
