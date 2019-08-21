@@ -28,6 +28,7 @@ let checkInvalidMove = function
 
 let validWhiteMovesData() = validWhiteMovesData()
 let validBlackMovesData() = validBlackMovesData()
+let validMoveSequence1() = validMoveSequence1()
 
 [<Theory>]
 [<MemberData("validWhiteMovesData")>]
@@ -43,6 +44,20 @@ let ``black move correctness`` data =
     let sw, sb = channels.CreateSession()
     makeValidMove sw correctWhiteMove 
     makeValidMove sb data
+    
+[<Fact>]
+let ``move sequence correctness`` () =
+    let channels = channelInfo()
+    let sessions = channels.CreateSession()
+    let swap (a, b) = b, a
+    let rec moveLoop moves channels  =
+        match moves with
+        | move::tail ->
+            let session = fst channels
+            makeValidMove session move
+            swap channels |> moveLoop tail
+        | _ -> ()
+    moveLoop (validMoveSequence1()) sessions
 
 [<Theory>]
 [<InlineData("a2x")>]

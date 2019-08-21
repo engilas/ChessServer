@@ -51,3 +51,11 @@ module private Internal =
 
 let validWhiteMovesData() = prepareData validWhiteMoves
 let validBlackMovesData() = prepareData validBlackMoves
+
+let validMoveSequence1() = [
+    getMove "a2" "a3"
+    getMove "b7" "b5"
+    getMove "b1" "c3"
+    getMove "b5" "b4"
+    getMove "b2" "b3"
+]
