@@ -6,10 +6,10 @@ open TestHelper
 open FsUnit.Xunit
 
 [<Theory>]
-[<InlineData("a5", 0)>]
-[<InlineData("h5", 7)>]
-[<InlineData("a!", 0)>] //second symbol ignored
-let ``getColumn correctness`` = testFunction getColumn
+[<InlineData("a5", 0uy)>]
+[<InlineData("h5", 7uy)>]
+[<InlineData("a!", 0uy)>] //second symbol ignored
+let ``getColumn correctness`` i o = testFunction getColumn i o
 
 [<Theory>]
 [<InlineData("z1")>]
@@ -32,10 +32,10 @@ let ``getColumn null throws`` () =
 
 
 [<Theory>]
-[<InlineData("a1", 7)>]
-[<InlineData("h8", 0)>]
-[<InlineData("!5", 3)>] //first symbol ignored
-let ``getRow correctness`` = testFunction getRow
+[<InlineData("a1", 7uy)>]
+[<InlineData("h8", 0uy)>]
+[<InlineData("!5", 3uy)>] //first symbol ignored
+let ``getRow correctness`` i o = testFunction getRow i o
 
 [<Theory>]
 [<InlineData("z0")>]
@@ -56,13 +56,18 @@ let ``getRow null throws`` () =
 
 
 [<Theory>]
-[<InlineData(0, "a8")>]
-[<InlineData(63, "h1")>]
-let ``getPosition correctness`` = testFunction getPosition
+[<InlineData(0uy, "a8")>]
+[<InlineData(63uy, "h1")>]
+let ``positionToString correctness`` i o = testFunction positionToString i o
+
+[<Theory>]
+[<InlineData("a8", 0uy)>]
+[<InlineData("h1", 63uy)>]
+let ``parsePosition correctness`` i o = testFunction parsePosition i o
 
 
 let positionRange() = seq {64uy..255uy} |> toObjectSeq
 [<Theory>]
 [<MemberData("positionRange")>]
-let ``getPosition check range`` input =
-    (fun () -> getPosition input) |> should throw invalidArgument
+let ``positionToString check range`` input =
+    (fun () -> positionToString input) |> should throw invalidArgument

@@ -14,7 +14,7 @@ module Domain =
 module Command =
     open Domain
 
-    type Message = { Message:string }
+    type Message = { Message: string }
     type MoveAction = { From: string; To: string }
 
     type PingCommand = Message

@@ -2,45 +2,21 @@
 
 open SessionTypes
 open ChessEngine.Engine
-open Helper
 open ChessHelper
 open Types.Domain
 open Types.Channel
 open Types.Command
 open Microsoft.Extensions.Logging
 open System
+open EngineMappers
 
 [<AutoOpen>]
 module private Internal =
     let logger = Logging.getLogger "SessionAgent"
-
-    //todo test mappers
-    let domainColorMap = function
-    | ChessPieceColor.White -> White
-    | ChessPieceColor.Black -> Black
-    | x -> invalidArg "arg" x "unknown ChessPieceColor value"
-
-    let typeMap fst snd x = 
-        [
-            ChessPieceType.King, King
-            ChessPieceType.Queen, Queen
-            ChessPieceType.Rook, Rook
-            ChessPieceType.Bishop, Bishop
-            ChessPieceType.Knight, Knight
-            ChessPieceType.Pawn, Pawn
-        ] |> List.find (fst >> ((=) x)) |> snd
-
-    let fromEngineType = function
-    | None -> None
-    | Some x -> x |> function
-        | ChessPieceType.None -> None
-        | x -> x |> typeMap fst snd |> Some
-
-    let toEngineType = typeMap snd fst
     
     let getMoveAction (x: PieceMoving) = 
-        let src = getPosition x.SrcPosition
-        let dst = getPosition x.DstPosition
+        let src = positionToString x.SrcPosition
+        let dst = positionToString x.DstPosition
         moveAction src dst
         
     let ifExists (x:ChessPieceType) value =
@@ -79,7 +55,7 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
                 pieceExists
                 &&
                 state.Engine.GetPieceColorAt(colSrc, rowSrc)
-                |> domainColorMap = state.Next
+                |> fromEngineColor = state.Next
 
             match move.Command.PawnPromotion with
             | Some t -> state.Engine.PromoteToPieceType <- toEngineType t
@@ -93,7 +69,7 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
             then
                 let lastMove = state.Engine.LastMove
                 let takenPiece = ifExists lastMove.TakenPiece.PieceType
-                                 <| getPosition lastMove.TakenPiece.Position
+                                 <| positionToString lastMove.TakenPiece.Position
                     
                 let move = getMoveAction lastMove.MovingPiecePrimary
                 let secondMove = ifExists lastMove.MovingPieceSecondary.PieceType

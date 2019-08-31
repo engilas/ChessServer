@@ -7,7 +7,7 @@ open Xunit
 let invalidArgument = typeof<ArgumentException>
 let nullArgument = typeof<ArgumentNullException>
 
-let testFunction (f: 'a -> 'b) (input: 'a) : ('b -> unit) =
+let testFunction f input =
     f input |> should equal
 
 let failTest msg : 'a = 

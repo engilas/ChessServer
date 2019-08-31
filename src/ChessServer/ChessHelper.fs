@@ -32,7 +32,12 @@ let getRow (input:string) =
         8 - (input.Substring(1, 1) |> Int32.Parse) |> byte
     | _ -> invalidArg "input" input "wrong string length '%s'"
 
-let getPosition (pos: byte) =
+let parsePosition (pos: string) =
+    let col = getColumn pos
+    let row = getRow pos
+    col + row * 8uy
+
+let positionToString (pos: byte) =
     if pos >= 64uy then 
         invalidArg "pos" pos "not in range (1-64)"
         

@@ -8,10 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="pgn\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
+    <Compile Include="Session\NotationParser.fs" />
     <Compile Include="Session\SessionBase.fs" />
     <Compile Include="Session\SessionTestData.fs" />
+    <Compile Include="Session\PgnTests.fs" />
     <Compile Include="Session\SessionMoveTests.fs" />
     <Compile Include="Session\SessionStuffTests.fs" />
     <Compile Include="SerializeTests.fs" />
@@ -27,6 +32,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChessServer\ChessServer.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ChessCoreEngine">
+      <HintPath>..\..\lib\ChessCoreEngine.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
