@@ -6,6 +6,8 @@ open System.IO
 open System.Text.RegularExpressions
 open ChessEngine.Engine
 open ChessHelper
+open EngineMappers
+open FsUnit.Xunit
 
 type NotationMove = {
     Piece: PieceType
@@ -35,7 +37,10 @@ module private Internal =
     let files = ['a'..'h'] |> List.map string
     let ranks = ['1'..'8'] |> List.map string
     let contains (y: string) (x: string) = x.Contains(y)
-    let check y (x:string) = x.Replace(y, ""), contains y x
+    let removeLast (y: string) (x: string) =
+        let idx = x.LastIndexOf(y)
+        if idx = -1 then x else x.Remove(idx, y.Length)
+    let check y x = removeLast y x, contains y x
 
     let isTake = check "x"
     let isCheck = check "+"
@@ -52,14 +57,14 @@ module private Internal =
         else
             let lastTwo = x.Substring(x.Length - 2, 2)
             let pos = parsePosition lastTwo
-            x.Replace(lastTwo, ""), Some pos
+            removeLast lastTwo x, Some pos
         
     let getPromotion (x:string) =
         let possibleValues = pieceNames |> List.map ((+) "=")
         let promotion = possibleValues |> List.tryFind (fun p -> contains p x)
         match promotion with
         | Some value -> 
-            x.Replace(value, ""), value.Replace("=", "") |> getPieceType |> Some
+            removeLast value x, removeLast "=" value |> getPieceType |> Some
         | None -> x, None
 
     let getSourceHints (x:string) =
@@ -69,7 +74,7 @@ module private Internal =
 
         let tryRemove value (x:string)  =
             match value with
-            | Some v -> x.Replace(v, "")
+            | Some v -> removeLast v x
             | None -> x
 
         let x = x |> (tryRemove possibleRank >> tryRemove possibleFile >> tryRemove possiblePiece)
@@ -81,12 +86,22 @@ module private Internal =
 
         (x, possiblePiece, possibleFile, possibleRank)
 
-    let makeMove (engine: Engine) move =
+    let makeMoveAN (engine: Engine) move =
         let isValidMove =
             engine.IsValidMoveAN(move)
             && engine.MovePieceAN(move)
-
         if not isValidMove then failwith "invalid move"
+
+    let makeMove (engine: Engine) src dst = 
+        makeMoveAN engine <| sprintf "%s%s" (positionToString src) (positionToString dst)
+
+    let checkCastline (engine: Engine) engineColor = 
+        let first = engine.LastMove.MovingPiecePrimary
+        let second = engine.LastMove.MovingPieceSecondary
+        first.PieceColor |> should equal engineColor
+        first.PieceType |> should equal ChessPieceType.King
+        second.PieceColor |> should equal engineColor
+        second.PieceType |> should equal ChessPieceType.Rook
 
     let processMove (engine: Engine) move color =
         let move1, longCast = isLongCastling move
@@ -101,29 +116,66 @@ module private Internal =
         if not <| String.IsNullOrWhiteSpace(move8) then failwith "parse error"
 
         let makeMove = makeMove engine
+        let makeMoveAN = makeMoveAN engine
+        let engineColor = toEngineColor color
+        let engineType = toEngineType piece
+        let castRank = match color with White -> "1" | Black -> "8"
 
         if longCast then
-            let rank = match color with White -> "1" | Black -> "8"
-            makeMove <| sprintf "e%sc%s" rank rank
+            makeMoveAN <| sprintf "e%sc%s" castRank castRank
+            checkCastline engine engineColor
+        elif shortCast then
+            makeMoveAN <| sprintf "e%sg%s" castRank castRank
+            checkCastline engine engineColor
+        elif target.IsSome then
+            let target = target.Value
+
+            match promotion with
+            | Some p -> p |> toEngineType |> (fun x -> engine.PromoteToPieceType <- x)
+            | None -> ()
+
+            let unwrap f g x =
+                match x with
+                | Some x -> x |> (g >> f >> int)
+                | None -> -1
+
+            let col = unwrap getColumn (fun s -> sprintf "%s_" s) file
+            let row = unwrap getRow (fun s -> sprintf "_%s" s) rank
+
+            let src = engine.FindSourcePositon(engineType, engineColor, target, take, col, row)
+            makeMove src target
+
+            // asserts
             let lastMove = engine.LastMove
-            let first = lastMove.MovingPiecePrimary
-            //let engineColor =
-            //first.PieceColor 
+            lastMove.MovingPieceSecondary.PieceType |> should equal ChessPieceType.None
+            let move = lastMove.MovingPiecePrimary
+            move.PieceType |> should equal engineType
+            move.PieceColor |> should equal engineColor
+
+            match promotion with
+            | Some p -> lastMove.PawnPromotedTo |> should equal (p |> toEngineType)
+            | None -> ()
+
+            if take then lastMove.TakenPiece.PieceType |> should not' (equal ChessPieceType.None)
+            
+            let checkMates = 
+                engine.GetBlackCheck(), engine.GetBlackMate(), engine.GetWhiteCheck(), engine.GetWhiteMate()
+
+            match color with
+            | White -> checkMates |> should equal (check || mate, mate, false, false)
+            | Black -> checkMates |> should equal (false, false, check || mate, mate)
+
             ()
+        else
+            failwith "parse error"
 
-        ()
-
-    
-
-let parse file =
-    let lines = File.ReadAllLines(file) |> List.ofArray
-    // skip tags
+let parseGame (lines: string list) =
     let lines =
         lines
         |> List.skipWhile (fun x ->
             x.StartsWith('[')
         )
-    let text = lines |> List.reduce (+)
+    let text = String.Join(' ', lines)
     let scorePossibleValues = [ "1-0"; "0-1"; "1/2-1/2"; "*" ]
     let score = 
         scorePossibleValues |> List.find (fun x -> text.Contains(x))
@@ -149,13 +201,19 @@ let parse file =
 
     moves
     |> List.map(fun (white, black) ->
-        try processMove white White
-        with e -> 
-            ()
-        try processMove black Black
-        with e ->
-            ()
+        processMove white White
+        if black <> null then
+            processMove black Black
     ) |> ignore
 
-    
-    ()
+let parse file =
+    let text = File.ReadAllText(file)
+    let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
+
+    splitRegex.Split(text) 
+    |> List.ofArray
+    |> List.filter (not << String.IsNullOrWhiteSpace)
+    |> List.map (fun game ->
+        game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+    )
+    |> List.map parseGame

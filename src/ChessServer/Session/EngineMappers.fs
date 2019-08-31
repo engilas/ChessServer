@@ -3,7 +3,7 @@
 open ChessEngine.Engine
 open Types.Domain
 
-let private mapperFun fst snd x = snd << List.find (fst >> ((=) x))
+let mapperFun fst snd x = snd << List.find (fst >> ((=) x))
 
 let private colorMap fst snd x = 
     [

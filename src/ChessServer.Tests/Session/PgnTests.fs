@@ -6,8 +6,8 @@ open System.IO
 
 [<Fact>]
 let ``test pgn files`` () =
-    let pgnFiles = Directory.EnumerateFiles("pgn")
+    let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
     pgnFiles
-    |> Seq.map (fun f -> parse f)
+    |> List.map (fun f -> parse f)
     |> ignore
     ()
