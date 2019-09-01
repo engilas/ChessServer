@@ -86,10 +86,21 @@ module private Internal =
 
         (x, possiblePiece, possibleFile, possibleRank)
 
-    let makeMoveAN (engine: Engine) move =
-        let isValidMove =
-            engine.IsValidMoveAN(move)
-            && engine.MovePieceAN(move)
+    let makeMoveAN (engine: Engine) (move:string) =
+        let src = move.Substring(0, 2)
+        let validMoves = 
+            engine.GetValidMoves(getColumn src, getRow src)
+            |> Array.map (fun b -> 
+                let col = b.[0]
+                let row = b.[1]
+                let pos = col + row * 8uy
+                positionToString pos
+            )
+
+        let valid = engine.IsValidMoveAN(move)
+        let isValidMove = valid && engine.MovePieceAN(move)
+
+
         if not isValidMove then failwith "invalid move"
 
     let makeMove (engine: Engine) src dst = 
@@ -189,9 +200,9 @@ let parseGame (lines: string list) =
         |> List.map(fun x ->
             match x.Split(([||]: string[]), StringSplitOptions.RemoveEmptyEntries) |> List.ofSeq with
             | fst::snd::[] ->
-                (fst.Trim(), snd.Trim())
+                fst.Trim(), snd.Trim()
             | fst::[] ->
-                (fst.Trim(), null)
+                fst.Trim(), null
             | _ -> failwith "incorrect round"
         )
 
@@ -200,7 +211,7 @@ let parseGame (lines: string list) =
     let processMove = processMove engine
 
     moves
-    |> List.map(fun (white, black) ->
+    |> List.mapi(fun i (white, black) ->
         processMove white White
         if black <> null then
             processMove black Black
@@ -216,4 +227,6 @@ let parse file =
     |> List.map (fun game ->
         game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
     )
-    |> List.map parseGame
+    |> List.mapi (fun i game -> 
+        parseGame game
+    )
