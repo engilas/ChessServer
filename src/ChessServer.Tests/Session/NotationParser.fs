@@ -49,7 +49,7 @@ module private Internal =
 
     let isShortCastling x =
         let (x, isLong) = isLongCastling x
-        if isLong then (x, isLong)
+        if isLong then (x, false)
         else check "O-O" x
 
     let getTarget (x:string) =
@@ -87,24 +87,9 @@ module private Internal =
         (x, possiblePiece, possibleFile, possibleRank)
 
     let makeMoveAN (engine: Engine) (move:string) =
-        let src = move.Substring(0, 2)
-        let validMoves = 
-            engine.GetValidMoves(getColumn src, getRow src)
-            |> Array.map (fun b -> 
-                let col = b.[0]
-                let row = b.[1]
-                let pos = col + row * 8uy
-                positionToString pos
-            )
-
         let valid = engine.IsValidMoveAN(move)
         let isValidMove = valid && engine.MovePieceAN(move)
-
-
         if not isValidMove then failwith "invalid move"
-
-    let makeMove (engine: Engine) src dst = 
-        makeMoveAN engine <| sprintf "%s%s" (positionToString src) (positionToString dst)
 
     let checkCastline (engine: Engine) engineColor = 
         let first = engine.LastMove.MovingPiecePrimary
@@ -126,7 +111,6 @@ module private Internal =
 
         if not <| String.IsNullOrWhiteSpace(move8) then failwith "parse error"
 
-        let makeMove = makeMove engine
         let makeMoveAN = makeMoveAN engine
         let engineColor = toEngineColor color
         let engineType = toEngineType piece
@@ -153,8 +137,8 @@ module private Internal =
             let col = unwrap getColumn (fun s -> sprintf "%s_" s) file
             let row = unwrap getRow (fun s -> sprintf "_%s" s) rank
 
-            let src = engine.FindSourcePositon(engineType, engineColor, target, take, col, row)
-            makeMove src target
+            if not <| engine.MovePiece(engineType, engineColor, target, take, col, row) 
+            then failwith "invalid move"
 
             // asserts
             let lastMove = engine.LastMove
@@ -227,6 +211,7 @@ let parse file =
     |> List.map (fun game ->
         game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
     )
-    |> List.mapi (fun i game -> 
+    |> Array.ofList
+    |> Array.Parallel.mapi (fun i game ->
         parseGame game
     )
