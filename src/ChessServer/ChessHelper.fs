@@ -1,7 +1,6 @@
 ﻿module ChessHelper
 
 open System
-open Types.Command
 open Types.Domain
 open ChessEngine.Engine
 open Helper
@@ -32,7 +31,7 @@ let getRow (input:string) =
         8 - (input.Substring(1, 1) |> Int32.Parse) |> byte
     | _ -> invalidArg "input" input "wrong string length '%s'"
 
-let parsePosition (pos: string) =
+let positionFromString (pos: string) =
     let col = getColumn pos
     let row = getRow pos
     col + row * 8uy
@@ -46,7 +45,7 @@ let positionToString (pos: byte) =
     let row = pos / 8
     ((int 'a' + col) |> char |> string) + (8 - row).ToString()
         
-let moveAction from _to = {From = from; To = _to}
+let moveAction src dst = {Src = src; Dst = dst}
 
 let checkEndGame (engine: Engine) =
     if engine.StaleMate then

@@ -6,6 +6,7 @@ open TestHelper
 open SessionBase
 open FsUnit.Xunit
 open SessionTestData
+open ChessHelper
 
 let makeValidMove session move = 
     session.CreateMove move
@@ -13,7 +14,7 @@ let makeValidMove session move =
     | Ok -> ()
     | _ -> failTest "wrong move result"
 
-let makeValidMove2 session from _to = getMove from _to |> makeValidMove session
+let makeValidMove2 session src dst = getMove src dst |> makeValidMove session
 
 let correctWhiteMove = getMove "a2" "a4"
 let correctBlackMove = getMove "a7" "a5"
@@ -58,23 +59,6 @@ let ``move sequence correctness`` () =
             swap channels |> moveLoop tail
         | _ -> ()
     moveLoop (validMoveSequence1()) sessions
-
-[<Theory>]
-[<InlineData("a2x")>]
-[<InlineData("a")>]
-[<InlineData("22")>]
-[<InlineData("2a")>]
-let ``move error - invalid value`` data =
-    let channels = channelInfo()
-    let sw, _ = channels.CreateSession()
-    let checkMoveError source from _to =
-        let result = sw.CreateMove <| getMove from _to
-        match result with
-        | InvalidInput msg -> msg |> should haveSubstring source
-        | _ -> failTest "wrong move result"
-
-    checkMoveError "From" data "a4"
-    checkMoveError "To" "a4" data
 
 [<Fact>]
 let ``move error - not your turn - black`` () =

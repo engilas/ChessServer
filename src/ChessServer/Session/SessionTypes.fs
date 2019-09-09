@@ -3,6 +3,7 @@
 open Types.Channel
 open ChessEngine.Engine
 open Types.Domain
+open Types.Command
 
 type SessionError =
     | SessionTerminated
@@ -22,7 +23,12 @@ type SessionState = {
     Status: SessionStatus
 }
 
+type SessionMove = {
+    Source: Color
+    Command: MoveCommand
+}
+
 type SessionMessage =
-    | Regular of Move * AsyncReplyChannel<MoveResult>
+    | Regular of SessionMove * AsyncReplyChannel<MoveResult>
     | GetState of AsyncReplyChannel<SessionState>
     | Terminate

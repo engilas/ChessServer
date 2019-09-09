@@ -63,7 +63,7 @@ let ``positionToString correctness`` i o = testFunction positionToString i o
 [<Theory>]
 [<InlineData("a8", 0uy)>]
 [<InlineData("h1", 63uy)>]
-let ``parsePosition correctness`` i o = testFunction parsePosition i o
+let ``positionFromString correctness`` i o = testFunction positionFromString i o
 
 
 let positionRange() = seq {64uy..255uy} |> toObjectSeq

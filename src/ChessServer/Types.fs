@@ -11,17 +11,21 @@ module Domain =
     | Knight
     | Pawn
 
+    type Move = {
+        Src: byte
+        Dst: byte
+    }
+
 module Command =
     open Domain
 
     type Message = { Message: string }
-    type MoveAction = { From: string; To: string }
 
     type PingCommand = Message
     type ChatCommand = Message
     type MoveCommand = { 
-        From: string
-        To: string 
+        Src: byte
+        Dst: byte 
         PawnPromotion: PieceType option
     }
 
@@ -35,8 +39,8 @@ module Command =
     }
 
     type MoveNotify = { 
-        Primary: MoveAction
-        Secondary: MoveAction option
+        Primary: Move
+        Secondary: Move option
         TakenPiecePos: string option
         PawnPromotion: PieceType option
     }
@@ -73,13 +77,7 @@ module Command =
     | SessionCloseNotify of Message
 
 module Channel =
-    open Domain
     open Command
-
-    type Move = {
-        Source: Color
-        Command: MoveCommand
-    }
 
     type MoveResult = 
     | Ok

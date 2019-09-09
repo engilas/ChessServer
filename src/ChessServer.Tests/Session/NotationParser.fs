@@ -56,7 +56,7 @@ module private Internal =
         if x.Length < 2 then x, None
         else
             let lastTwo = x.Substring(x.Length - 2, 2)
-            let pos = parsePosition lastTwo
+            let pos = positionFromString lastTwo
             removeLast lastTwo x, Some pos
         
     let getPromotion (x:string) =

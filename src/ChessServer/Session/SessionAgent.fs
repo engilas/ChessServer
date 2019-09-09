@@ -14,10 +14,7 @@ open EngineMappers
 module private Internal =
     let logger = Logging.getLogger "SessionAgent"
     
-    let getMoveAction (x: PieceMoving) = 
-        let src = positionToString x.SrcPosition
-        let dst = positionToString x.DstPosition
-        moveAction src dst
+    let getMoveAction (x: PieceMoving) = moveAction x.SrcPosition x.DstPosition
         
     let ifExists (x:ChessPieceType) value =
         match x with
@@ -37,24 +34,15 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
 
     let state =
         if move.Source = state.Next then
+            let src = move.Command.Src
+            let dst = move.Command.Dst
 
-            let wrapParse f x source =
-                try f x
-                with | :? ArgumentException ->
-                    replyChannel.Reply <| InvalidInput source
-                    sessionError <| AgentError (sprintf "Can't parse argument %s with value %s" source x)
-
-            let colSrc = wrapParse getColumn move.Command.From "From"
-            let rowSrc = wrapParse getRow move.Command.From "From"
-            let colDst = wrapParse getColumn move.Command.To "To"
-            let rowDst = wrapParse getRow move.Command.To "To"
-
-            let pieceExists = state.Engine.GetPieceTypeAt(colSrc, rowSrc) <> ChessPieceType.None
+            let pieceExists = state.Engine.GetPieceTypeAt(src) <> ChessPieceType.None
 
             let sameColor =
                 pieceExists
                 &&
-                state.Engine.GetPieceColorAt(colSrc, rowSrc)
+                state.Engine.GetPieceColorAt(src)
                 |> fromEngineColor = state.Next
 
             match move.Command.PawnPromotion with
@@ -64,8 +52,8 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
             if
                 pieceExists
                 && sameColor
-                && state.Engine.IsValidMove(colSrc, rowSrc, colDst, rowDst)
-                && state.Engine.MovePiece(colSrc, rowSrc, colDst, rowDst)
+                && state.Engine.IsValidMove(src, dst)
+                && state.Engine.MovePiece(src, dst)
             then
                 let lastMove = state.Engine.LastMove
                 let takenPiece = ifExists lastMove.TakenPiece.PieceType

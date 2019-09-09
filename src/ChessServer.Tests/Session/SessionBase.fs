@@ -3,6 +3,7 @@
 open Session
 open Types.Channel
 open Types.Command
+open ChessHelper
 
 let applyMany x = List.map (fun f -> f x) >> ignore
 
@@ -24,8 +25,8 @@ let createStateAgent state = MailboxProcessor<StateAgentMessage<'a>>.Start(fun i
 
 let notifyStub = TestNotify {Message=""}
 let moveStub = {
-    From = ""
-    To = "" 
+    Src = 0uy
+    Dst = 0uy
     PawnPromotion = None
 }
 
@@ -88,4 +89,4 @@ let channelInfo () =
         CreateSession = fun () -> createSession wChannel bChannel
     }
 
-let getMove from _to = {moveStub with From = from; To = _to}
+let getMove src dst = {moveStub with Src = positionFromString src; Dst = positionFromString dst}
