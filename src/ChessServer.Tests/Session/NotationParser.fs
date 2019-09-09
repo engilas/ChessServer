@@ -1,5 +1,6 @@
 ﻿module NotationParser
 
+open Types.Command
 open Types.Domain
 open System
 open System.IO
@@ -10,16 +11,14 @@ open EngineMappers
 open FsUnit.Xunit
 
 type NotationMove = {
-    Piece: PieceType
-    ColSrc: byte
-    RowSrc: byte
-    ColDst: byte
-    RowDst: byte
+    Move: MoveDescription
+    Check: bool
+    Mate: bool
 }
 
 type NotationRow = {
     WhiteMove: NotationMove
-    BlackMove: NotationMove
+    BlackMove: NotationMove option
 }
 
 [<AutoOpen>]
@@ -99,7 +98,7 @@ module private Internal =
         second.PieceColor |> should equal engineColor
         second.PieceType |> should equal ChessPieceType.Rook
 
-    let processMove (engine: Engine) move color =
+    let processMove (engine: Engine) move color : NotationMove =
         let move1, longCast = isLongCastling move
         let move2, shortCast = isShortCastling move1
         let move3, check = isCheck move2
@@ -159,59 +158,59 @@ module private Internal =
             match color with
             | White -> checkMates |> should equal (check || mate, mate, false, false)
             | Black -> checkMates |> should equal (false, false, check || mate, mate)
-
-            ()
         else
             failwith "parse error"
 
-let parseGame (lines: string list) =
-    let lines =
-        lines
-        |> List.skipWhile (fun x ->
-            x.StartsWith('[')
+        {
+            Move = getMoveDescriptionFromEngine engine
+            Check = engine.GetBlackCheck() || engine.GetWhiteCheck()
+            Mate = engine.GetBlackMate() || engine.GetWhiteMate()
+        }
+        
+    let parseGame (lines: string list) =
+        let lines =
+            lines
+            |> List.skipWhile (fun x ->
+                x.StartsWith('[')
+            )
+        let text = String.Join(' ', lines)
+        let scorePossibleValues = [ "1-0"; "0-1"; "1/2-1/2"; "*" ]
+        let score = 
+            scorePossibleValues |> List.find (fun x -> text.Contains(x))
+        let commentsRegex = new Regex("{.*}")
+        let text = commentsRegex.Replace(text, "").Replace(score, "")
+        let splitRegex = new Regex(@"\d+\.")
+        let moves = 
+            splitRegex.Split(text)
+            |> List.ofSeq
+            |> List.filter(fun x -> not <| String.IsNullOrWhiteSpace(x))
+            |> List.map(fun x ->
+                match x.Split(([||]: string[]), StringSplitOptions.RemoveEmptyEntries) |> List.ofSeq with
+                | fst::snd::[] ->
+                    fst.Trim(), snd.Trim()
+                | fst::[] ->
+                    fst.Trim(), null
+                | _ -> failwith "incorrect round"
+            )
+        let engine = Engine()
+        let processMove = processMove engine
+        moves
+        |> List.mapi(fun i (white, black) -> {
+            WhiteMove = processMove white White
+            BlackMove =
+                if black <> null then
+                    Some <| processMove black Black
+                else None
+            }
         )
-    let text = String.Join(' ', lines)
-    let scorePossibleValues = [ "1-0"; "0-1"; "1/2-1/2"; "*" ]
-    let score = 
-        scorePossibleValues |> List.find (fun x -> text.Contains(x))
-    let commentsRegex = new Regex("{.*}")
-    let text = commentsRegex.Replace(text, "").Replace(score, "")
-    let splitRegex = new Regex(@"\d+\.")
-    let moves = 
-        splitRegex.Split(text)
-        |> List.ofSeq
-        |> List.filter(fun x -> not <| String.IsNullOrWhiteSpace(x))
-        |> List.map(fun x ->
-            match x.Split(([||]: string[]), StringSplitOptions.RemoveEmptyEntries) |> List.ofSeq with
-            | fst::snd::[] ->
-                fst.Trim(), snd.Trim()
-            | fst::[] ->
-                fst.Trim(), null
-            | _ -> failwith "incorrect round"
-        )
-
-    let engine = Engine()
-
-    let processMove = processMove engine
-
-    moves
-    |> List.mapi(fun i (white, black) ->
-        processMove white White
-        if black <> null then
-            processMove black Black
-    ) |> ignore
 
 let parse file =
     let text = File.ReadAllText(file)
     let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
 
-    splitRegex.Split(text) 
-    |> List.ofArray
-    |> List.filter (not << String.IsNullOrWhiteSpace)
-    |> List.map (fun game ->
+    splitRegex.Split(text)
+    |> Seq.filter (not << String.IsNullOrWhiteSpace)
+    |> Seq.map (fun game ->
         game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
     )
-    |> Array.ofList
-    |> Array.Parallel.mapi (fun i game ->
-        parseGame game
-    )
+    |> Seq.map parseGame

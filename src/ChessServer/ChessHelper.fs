@@ -2,6 +2,7 @@
 
 open System
 open Types.Domain
+open EngineMappers
 open ChessEngine.Engine
 open Helper
 
@@ -64,3 +65,20 @@ let checkEndGame (engine: Engine) =
     else None
         
 
+let getMoveDescriptionFromEngine (engine: Engine) = 
+    let getMoveAction (x: PieceMoving) = moveAction x.SrcPosition x.DstPosition
+    let ifExists (x:ChessPieceType) value =
+        match x with
+        | ChessPieceType.None -> None
+        | _ -> Some value
+
+    let lastMove = engine.LastMove
+    let takenPiece = ifExists lastMove.TakenPiece.PieceType
+                        <| positionToString lastMove.TakenPiece.Position
+                    
+    let move = getMoveAction lastMove.MovingPiecePrimary
+    let secondMove = ifExists lastMove.MovingPieceSecondary.PieceType
+                        <| getMoveAction lastMove.MovingPieceSecondary
+    let pawnPromoted = ifExists lastMove.PawnPromotedTo lastMove.PawnPromotedTo
+
+    { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = fromEngineType pawnPromoted }

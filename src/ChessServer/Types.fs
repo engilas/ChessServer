@@ -16,6 +16,13 @@ module Domain =
         Dst: byte
     }
 
+    type MoveDescription = { 
+        Primary: Move
+        Secondary: Move option
+        TakenPiecePos: string option
+        PawnPromotion: PieceType option
+    }
+
 module Command =
     open Domain
 
@@ -36,13 +43,6 @@ module Command =
     type ChatNotify = Message
     type SessionStartNotify = {
         FirstMove: Color
-    }
-
-    type MoveNotify = { 
-        Primary: Move
-        Secondary: Move option
-        TakenPiecePos: string option
-        PawnPromotion: PieceType option
     }
 
     type EndGameNotify = {
@@ -71,7 +71,7 @@ module Command =
     | TestNotify of TestNotify
     | ErrorNotify of Method * ErrorNotify
     | ChatNotify of ChatNotify
-    | MoveNotify of MoveNotify
+    | MoveNotify of MoveDescription
     | EndGameNotify of EndGameNotify
     | SessionStartNotify of SessionStartNotify
     | SessionCloseNotify of Message

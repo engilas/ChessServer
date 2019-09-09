@@ -14,12 +14,9 @@ open EngineMappers
 module private Internal =
     let logger = Logging.getLogger "SessionAgent"
     
-    let getMoveAction (x: PieceMoving) = moveAction x.SrcPosition x.DstPosition
+    
         
-    let ifExists (x:ChessPieceType) value =
-        match x with
-        | ChessPieceType.None -> None
-        | _ -> Some value
+    
 
 let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult>) onEndGame = 
     let opponentColor =
@@ -55,17 +52,8 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
                 && state.Engine.IsValidMove(src, dst)
                 && state.Engine.MovePiece(src, dst)
             then
-                let lastMove = state.Engine.LastMove
-                let takenPiece = ifExists lastMove.TakenPiece.PieceType
-                                 <| positionToString lastMove.TakenPiece.Position
-                    
-                let move = getMoveAction lastMove.MovingPiecePrimary
-                let secondMove = ifExists lastMove.MovingPieceSecondary.PieceType
-                                 <| getMoveAction lastMove.MovingPieceSecondary
-                let pawnPromoted = ifExists lastMove.PawnPromotedTo lastMove.PawnPromotedTo
-
                 replyChannel.Reply Ok
-                let notify = MoveNotify { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = fromEngineType pawnPromoted }
+                let notify = MoveNotify <| getMoveDescriptionFromEngine state.Engine
                 opponentChannel.PushNotification notify
                 {state with Next = opponentColor}
             else
