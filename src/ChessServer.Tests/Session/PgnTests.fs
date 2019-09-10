@@ -7,41 +7,26 @@ open SessionBase
 open Types.Domain
 open Types.Command
 open Types.Channel
+open System.Diagnostics
+open SessionTypes
 
-//let pgnFiles = Directory.EnumerateFiles("pgn")
-let getMovesFromPgn = 
-    Directory.EnumerateFiles("pgn")
-    |> Seq.map parse
-    |> Seq.collect id
+let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
+let getPgnMoves count = parse count pgnFiles
+let allPgnMoves() = parseAll pgnFiles
 
 [<Fact>]
-let ``test pgn files`` () =
-    getMovesFromPgn
-    |> Seq.take 300
-    |> Seq.toList
-    //todo parallel
-    |> ignore
+let ``test pgn files`` () = allPgnMoves() |> ignore
 
 [<Fact>]
 let ``process pgn files on session and check correctness`` () = 
-    getMovesFromPgn 
-    |> Seq.take 300 
+    getPgnMoves 300 
     |> Seq.toList
     //todo parallel
-    |> List.iteri (fun i game ->
+    |> List.iter (fun game ->
         let channels = channelInfo()
         let sw, sb = channels.CreateSession()
-        let getSession = function White -> sw | Black -> sb
 
-        game
-        |> List.map (fun row ->
-            [White, Some row.WhiteMove; Black, row.BlackMove]
-            |> List.filter (fun (_, move) -> move.IsSome)
-            |> List.map (fun (color, move) -> color, move.Value)
-        )
-        |> List.collect id
-        |> List.iteri (fun i (color, pgnMove) -> 
-            let session = getSession color
+        let processMove session pgnMove =
             let primary = pgnMove.Move.Primary
             let move = {
                 Src = primary.Src
@@ -52,5 +37,13 @@ let ``process pgn files on session and check correctness`` () =
             match result with
             | MoveResult.Ok -> ()
             | _ -> failwith "Invalid move result"
+
+
+        game
+        |> List.iteri (fun m row -> 
+            processMove sw row.WhiteMove
+            match row.BlackMove with
+            | Some move -> processMove sb move
+            | None -> ()
         )
     )

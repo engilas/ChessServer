@@ -9,6 +9,7 @@ open ChessEngine.Engine
 open ChessHelper
 open EngineMappers
 open FsUnit.Xunit
+open System.Text
 
 type NotationMove = {
     Move: MoveDescription
@@ -19,6 +20,7 @@ type NotationMove = {
 type NotationRow = {
     WhiteMove: NotationMove
     BlackMove: NotationMove option
+    GameId: string
 }
 
 [<AutoOpen>]
@@ -168,6 +170,15 @@ module private Internal =
         }
         
     let parseGame (lines: string list) =
+        let gameId =
+            lines
+            |> List.tryFind (fun line -> 
+                line.StartsWith("[FICSGamesDBGameNo")
+            )
+            |> function
+                | None -> ""
+                | Some value -> (new Regex(@"\d+")).Match(value).Value
+
         let lines =
             lines
             |> List.skipWhile (fun x ->
@@ -195,22 +206,36 @@ module private Internal =
         let engine = Engine()
         let processMove = processMove engine
         moves
-        |> List.mapi(fun i (white, black) -> {
+        |> List.map(fun (white, black) -> {
             WhiteMove = processMove white White
             BlackMove =
                 if black <> null then
                     Some <| processMove black Black
                 else None
-            }
-        )
+            GameId = gameId
+        })
 
-let parse file =
-    let text = File.ReadAllText(file)
+
+let private prepareText files =
+    let text = 
+        files
+        |> List.map File.ReadAllText
+        |> List.fold (fun (acc: StringBuilder) elem -> acc.AppendLine(elem)) (StringBuilder())
+        |> (fun sb -> sb.ToString())
+
     let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
 
     splitRegex.Split(text)
-    |> Seq.filter (not << String.IsNullOrWhiteSpace)
-    |> Seq.map (fun game ->
+    |> Array.filter (not << String.IsNullOrWhiteSpace)
+
+let private parallelProcess list =
+    list
+    |> Array.map (fun (game: string) ->
         game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
     )
-    |> Seq.map parseGame
+    |> Array.Parallel.map parseGame
+    |> Array.toList
+
+let parseAll = prepareText >> parallelProcess
+let parse count = prepareText >> Array.take count >> parallelProcess
+    

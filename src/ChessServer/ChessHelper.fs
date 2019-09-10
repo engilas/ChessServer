@@ -52,10 +52,11 @@ let checkEndGame (engine: Engine) =
     if engine.StaleMate then
         if engine.InsufficientMaterial then
             (Draw, "Draw by insufficient material") |> Some
-        elif engine.RepeatedMove then
-            (Draw, "Draw by repetition") |> Some
-        elif engine.FiftyMove then
-            (Draw, "Draw by fifty move rule") |> Some
+        //elif engine.RepeatedMove then
+        //    (Draw, "Draw by repetition") |> Some
+        //elif engine.FiftyMove then
+        //    (Draw, "Draw by fifty move rule") |> Some
+        // enable later by game params
         else
             (Draw, "Stalemate") |> Some
     elif (engine.GetWhiteMate()) then
