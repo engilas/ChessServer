@@ -44,7 +44,7 @@ let ``close session check notification`` () =
             
         session.CloseSession msg
         notify1() |> closeNotifyMsg |> should haveSubstring msg
-        notify2() |> should equal notifyStub
+        notify2() |> should be Empty
     
     let channels = channelInfo()
 
