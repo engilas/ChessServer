@@ -16,7 +16,7 @@ let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
 let getPgnMoves count = parse count pgnFiles
 let allPgnMoves() = parseAll pgnFiles
 
-[<Fact>]
+[<Fact(Skip="too long")>]
 let ``test pgn files`` () = allPgnMoves() |> ignore
 
 [<Fact>]

@@ -14,9 +14,10 @@
         <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.fsproj" t="IncludeRecursive" />
         <e p="CommandProcessor.fs" t="Include" />
+        <e p="EngineMappers.fs" t="Include" />
         <e p="Helper.fs" t="Include" />
-        <e p="IdiomaticDuConverter.fs" t="Include" />
         <e p="Infrastructure" t="Include">
+          <e p="IdiomaticDuConverter.fs" t="Include" />
           <e p="IocManager.fs" t="Include" />
           <e p="Logging.fs" t="Include" />
         </e>
@@ -46,9 +47,15 @@
         <e p="ChessServer.Tests.fsproj" t="IncludeRecursive" />
         <e p="FsUnitExtensions.fs" t="Include" />
         <e p="obj" t="ExcludeRecursive" />
-        <e p="Program.fs" t="Include" />
+        <e p="pgn" t="Include">
+          <e p="ct-2341-2323-2019.4.14.pgn" t="Include" />
+          <e p="ficsgamesdb_search_87938.pgn" t="Include" />
+          <e p="Kasparov,-G._vs_Bartels,-Simon_2016.06.02.pgn" t="Include" />
+        </e>
         <e p="SerializeTests.fs" t="Include" />
         <e p="Session" t="Include">
+          <e p="NotationParser.fs" t="Include" />
+          <e p="PgnTests.fs" t="Include" />
           <e p="SessionBase.fs" t="Include" />
           <e p="SessionMoveTests.fs" t="Include" />
           <e p="SessionStuffTests.fs" t="Include" />

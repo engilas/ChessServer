@@ -17,6 +17,7 @@
   <ItemGroup>
     <Compile Include="Infrastructure\IocManager.fs" />
     <Compile Include="Infrastructure\Logging.fs" />
+    <Compile Include="Infrastructure\IdiomaticDuConverter.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="EngineMappers.fs" />
     <Compile Include="Helper.fs" />
@@ -24,7 +25,6 @@
     <Compile Include="Session\SessionTypes.fs" />
     <Compile Include="Session\SessionAgent.fs" />
     <Compile Include="Session\Session.fs" />
-    <Compile Include="IdiomaticDuConverter.fs" />
     <Compile Include="JsonRpc.fs" />
     <Compile Include="MatchManager.fs" />
     <Compile Include="CommandProcessor.fs" />
