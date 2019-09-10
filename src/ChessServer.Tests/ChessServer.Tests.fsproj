@@ -13,7 +13,7 @@
     </None>
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
-    <Compile Include="Session\NotationParser.fs" />
+    <Compile Include="Session\PgnParser.fs" />
     <Compile Include="Session\SessionBase.fs" />
     <Compile Include="Session\SessionTestData.fs" />
     <Compile Include="Session\PgnTests.fs" />

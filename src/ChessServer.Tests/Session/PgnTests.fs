@@ -1,13 +1,12 @@
 ﻿module PgnTests
 
 open Xunit
-open NotationParser
+open PgnParser
 open System.IO
 open SessionBase
 open Types.Domain
 open Types.Command
 open Types.Channel
-open System.Diagnostics
 open SessionTypes
 open FsUnit.Xunit
 open TestHelper
@@ -21,10 +20,10 @@ let ``test pgn files`` () = allPgnMoves() |> ignore
 
 [<Fact>]
 let ``process pgn files on session and check correctness`` () = 
-    getPgnMoves 300 
-    |> Seq.toList
+    allPgnMoves() 
+    |> Array.ofSeq
     //todo parallel
-    |> List.iter (fun game ->
+    |> Array.Parallel.iter (fun game ->
         let channels = channelInfo()
         let sw, sb = channels.CreateSession()
 
@@ -35,27 +34,19 @@ let ``process pgn files on session and check correctness`` () =
                 Dst = primary.Dst
                 PawnPromotion = pgnMove.PawnPromotion
             }
-            try 
-                let result = session.CreateMove move
-                match result with
-                | MoveResult.Ok -> ()
-                | _ -> failwith "Invalid move result"
+            
+            let result = session.CreateMove move
+            match result with
+            | MoveResult.Ok -> ()
+            | _ -> failwith "Invalid move result"
 
-                let moveDesc = 
-                    match opponentNotify() with
-                    | MoveNotify moveDesc :: _ -> moveDesc
-                    | EndGameNotify _ :: MoveNotify moveDesc :: _ -> moveDesc
-                    | _ -> failTest "Invalid notify sequence"
+            let moveDesc = 
+                match opponentNotify() with
+                | MoveNotify moveDesc :: _ -> moveDesc
+                | EndGameNotify _ :: MoveNotify moveDesc :: _ -> moveDesc
+                | _ -> failTest "Invalid notify sequence"
 
-                moveDesc |> should equal pgnMove
-            with 
-            | SessionException(_) -> 
-                let notify = channels.WhiteNotify()
-                match notify with 
-                | EndGameNotify endGame :: _ ->
-                    ()
-                | _ -> ()
-                reraise()
+            moveDesc |> should equal pgnMove
 
 
         game

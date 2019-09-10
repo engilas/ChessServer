@@ -1,4 +1,4 @@
-﻿module NotationParser
+﻿module PgnParser
 
 open Types.Command
 open Types.Domain

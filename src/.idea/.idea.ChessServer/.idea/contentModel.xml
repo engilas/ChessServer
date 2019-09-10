@@ -54,7 +54,7 @@
         </e>
         <e p="SerializeTests.fs" t="Include" />
         <e p="Session" t="Include">
-          <e p="NotationParser.fs" t="Include" />
+          <e p="PgnParser.fs" t="Include" />
           <e p="PgnTests.fs" t="Include" />
           <e p="SessionBase.fs" t="Include" />
           <e p="SessionMoveTests.fs" t="Include" />
