@@ -11,6 +11,11 @@ type StateAgentMessage<'a> =
     | SetState of 'a
     | GetState of AsyncReplyChannel<'a>
 
+type StateHistoryAgentMessage<'a> =
+    | PushState of 'a
+    | GetHistory of AsyncReplyChannel<'a list>
+    | Clear
+
 let createStateAgent state = MailboxProcessor<StateAgentMessage<'a>>.Start(fun inbox ->
     let rec loop state = async {
         let! msg = inbox.Receive()
@@ -21,6 +26,19 @@ let createStateAgent state = MailboxProcessor<StateAgentMessage<'a>>.Start(fun i
         return! loop state
     }
     loop state
+)
+
+let createStateHistoryAgent() = MailboxProcessor<StateHistoryAgentMessage<'a>>.Start(fun inbox ->
+    let rec loop lst = async {
+        let! msg = inbox.Receive()
+        let newLst = 
+            match msg with
+            | GetHistory channel -> channel.Reply lst; lst
+            | PushState state -> state::lst
+            | Clear -> []
+        return! loop newLst
+    }
+    loop []
 )
 
 let notifyStub = TestNotify {Message=""}
@@ -39,8 +57,8 @@ type TestChannels = {
     White: TestChannel
     Black: TestChannel
     CreateSession: unit -> Session * Session
-    WhiteNotify: unit -> Notify
-    BlackNotify: unit -> Notify
+    WhiteNotify: unit -> Notify list
+    BlackNotify: unit -> Notify list
     WhiteState: unit -> ClientState
     BlackState: unit -> ClientState
     Reset: unit -> unit
@@ -48,21 +66,21 @@ type TestChannels = {
 
 let channelInfo () =
     let createChannel() =
-        let notifyAgent = createStateAgent notifyStub
+        let notifyAgent = createStateHistoryAgent()
         let stateAgent = createStateAgent New
         let channel = {
             Id = ""
-            PushNotification = fun n -> notifyAgent.Post <| SetState n 
+            PushNotification = fun n -> notifyAgent.Post <| PushState n 
             ChangeState = fun s -> 
                 stateAgent.Post <| SetState s
         }
-        let checkNotify() = notifyAgent.PostAndReply GetState
+        let checkNotify() = notifyAgent.PostAndReply GetHistory
         let checkState() = 
             let x = stateAgent.PostAndReply GetState
             x
 
         let reset() =
-            notifyAgent.Post <| SetState notifyStub
+            notifyAgent.Post <| Clear
             stateAgent.Post <| SetState New 
 
         channel, checkNotify, checkState, reset

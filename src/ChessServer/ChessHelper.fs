@@ -57,8 +57,9 @@ let checkEndGame (engine: Engine) =
         //elif engine.FiftyMove then
         //    (Draw, "Draw by fifty move rule") |> Some
         // enable later by game params
-        else
-            (Draw, "Stalemate") |> Some
+        //else
+        //    (Draw, "Stalemate") |> Some
+        else None
     elif (engine.GetWhiteMate()) then
         (BlackWin, "Black mates") |> Some
     elif (engine.GetBlackMate()) then
@@ -82,4 +83,11 @@ let getMoveDescriptionFromEngine (engine: Engine) =
                         <| getMoveAction lastMove.MovingPieceSecondary
     let pawnPromoted = ifExists lastMove.PawnPromotedTo lastMove.PawnPromotedTo
 
-    { Primary = move; Secondary = secondMove; TakenPiecePos = takenPiece; PawnPromotion = fromEngineType pawnPromoted }
+    { 
+        Primary = move; 
+        Secondary = secondMove; 
+        TakenPiecePos = takenPiece; 
+        PawnPromotion = fromEngineType pawnPromoted 
+        Check = engine.GetWhiteCheck() || engine.GetBlackCheck()
+        Mate = engine.GetWhiteMate() || engine.GetBlackMate()
+    }

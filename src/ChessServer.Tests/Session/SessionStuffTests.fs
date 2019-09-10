@@ -16,11 +16,13 @@ let ``chat check notification`` () =
 
     let checkNotify notify msg = 
         match notify() with
-        | ChatNotify n -> n.Message |> should equal msg
+        | ChatNotify n :: _ -> n.Message |> should equal msg
         | _ -> failTest "not a chat notify"
         
     let checkEmptyNotify notify =
-        if notify() <> notifyStub then failTest "should be empty notify"
+        match notify() with
+        | [] -> ()
+        | _ -> failTest "should be empty notify"
 
     whiteChat "w"
     checkNotify channels.BlackNotify "w"
@@ -37,7 +39,7 @@ let ``close session check notification`` () =
     let checkInternal session notify1 notify2 msg = 
         let closeNotifyMsg notify = 
             match notify with
-            | SessionCloseNotify {Message = msg} -> msg
+            | SessionCloseNotify {Message = msg} :: _ -> msg
             | _ -> failTest "not a session close notify"
             
         session.CloseSession msg

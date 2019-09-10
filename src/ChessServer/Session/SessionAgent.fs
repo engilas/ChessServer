@@ -52,9 +52,9 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
                 && state.Engine.IsValidMove(src, dst)
                 && state.Engine.MovePiece(src, dst)
             then
-                replyChannel.Reply Ok
                 let notify = MoveNotify <| getMoveDescriptionFromEngine state.Engine
                 opponentChannel.PushNotification notify
+                replyChannel.Reply Ok
                 {state with Next = opponentColor}
             else
                 replyChannel.Reply InvalidMove

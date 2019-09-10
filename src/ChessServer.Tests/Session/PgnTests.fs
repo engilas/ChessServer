@@ -9,6 +9,8 @@ open Types.Command
 open Types.Channel
 open System.Diagnostics
 open SessionTypes
+open FsUnit.Xunit
+open TestHelper
 
 let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
 let getPgnMoves count = parse count pgnFiles
@@ -26,24 +28,41 @@ let ``process pgn files on session and check correctness`` () =
         let channels = channelInfo()
         let sw, sb = channels.CreateSession()
 
-        let processMove session pgnMove =
-            let primary = pgnMove.Move.Primary
+        let processMove session opponentNotify pgnMove =
+            let primary = pgnMove.Primary
             let move = {
                 Src = primary.Src
                 Dst = primary.Dst
-                PawnPromotion = pgnMove.Move.PawnPromotion
+                PawnPromotion = pgnMove.PawnPromotion
             }
-            let result = session.CreateMove move
-            match result with
-            | MoveResult.Ok -> ()
-            | _ -> failwith "Invalid move result"
+            try 
+                let result = session.CreateMove move
+                match result with
+                | MoveResult.Ok -> ()
+                | _ -> failwith "Invalid move result"
+
+                let moveDesc = 
+                    match opponentNotify() with
+                    | MoveNotify moveDesc :: _ -> moveDesc
+                    | EndGameNotify _ :: MoveNotify moveDesc :: _ -> moveDesc
+                    | _ -> failTest "Invalid notify sequence"
+
+                moveDesc |> should equal pgnMove
+            with 
+            | SessionException(_) -> 
+                let notify = channels.WhiteNotify()
+                match notify with 
+                | EndGameNotify endGame :: _ ->
+                    ()
+                | _ -> ()
+                reraise()
 
 
         game
         |> List.iteri (fun m row -> 
-            processMove sw row.WhiteMove
+            processMove sw channels.BlackNotify row.WhiteMove
             match row.BlackMove with
-            | Some move -> processMove sb move
+            | Some move -> processMove sb channels.WhiteNotify move
             | None -> ()
         )
     )

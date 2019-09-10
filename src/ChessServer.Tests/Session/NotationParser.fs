@@ -11,15 +11,9 @@ open EngineMappers
 open FsUnit.Xunit
 open System.Text
 
-type NotationMove = {
-    Move: MoveDescription
-    Check: bool
-    Mate: bool
-}
-
 type NotationRow = {
-    WhiteMove: NotationMove
-    BlackMove: NotationMove option
+    WhiteMove: MoveDescription
+    BlackMove: MoveDescription option
     GameId: string
 }
 
@@ -100,7 +94,7 @@ module private Internal =
         second.PieceColor |> should equal engineColor
         second.PieceType |> should equal ChessPieceType.Rook
 
-    let processMove (engine: Engine) move color : NotationMove =
+    let processMove (engine: Engine) move color =
         let move1, longCast = isLongCastling move
         let move2, shortCast = isShortCastling move1
         let move3, check = isCheck move2
@@ -163,11 +157,7 @@ module private Internal =
         else
             failwith "parse error"
 
-        {
-            Move = getMoveDescriptionFromEngine engine
-            Check = engine.GetBlackCheck() || engine.GetWhiteCheck()
-            Mate = engine.GetBlackMate() || engine.GetWhiteMate()
-        }
+        getMoveDescriptionFromEngine engine
         
     let parseGame (lines: string list) =
         let gameId =

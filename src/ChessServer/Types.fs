@@ -21,6 +21,8 @@ module Domain =
         Secondary: Move option
         TakenPiecePos: string option
         PawnPromotion: PieceType option
+        Check: bool
+        Mate: bool
     }
 
 module Command =
