@@ -4,26 +4,23 @@ open Xunit
 open PgnParser
 open System.IO
 open SessionBase
-open Types.Domain
 open Types.Command
 open Types.Channel
-open SessionTypes
 open FsUnit.Xunit
 open TestHelper
+open FSharp.Collections.ParallelSeq
 
 let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
 let getPgnMoves count = parse count pgnFiles
 let allPgnMoves() = parseAll pgnFiles
 
-[<Fact(Skip="too long")>]
-let ``test pgn files`` () = allPgnMoves() |> ignore
+[<Fact>]
+let ``test pgn files`` () = allPgnMoves() |> PSeq.toArray |> ignore
 
 [<Fact>]
 let ``process pgn files on session and check correctness`` () = 
-    allPgnMoves() 
-    |> Array.ofSeq
-    //todo parallel
-    |> Array.Parallel.iter (fun game ->
+    let moves = allPgnMoves()
+    moves |> PSeq.iter (fun game -> 
         let channels = channelInfo()
         let sw, sb = channels.CreateSession()
 

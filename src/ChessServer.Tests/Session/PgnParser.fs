@@ -10,6 +10,7 @@ open ChessHelper
 open EngineMappers
 open FsUnit.Xunit
 open System.Text
+open FSharp.Collections.ParallelSeq
 
 type NotationRow = {
     WhiteMove: MoveDescription
@@ -216,16 +217,18 @@ let private prepareText files =
     let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
 
     splitRegex.Split(text)
-    |> Array.filter (not << String.IsNullOrWhiteSpace)
+    |> List.ofArray
+    |> List.filter (not << String.IsNullOrWhiteSpace)
 
-let private parallelProcess list =
+let private parallelProcess intercept list =
     list
-    |> Array.map (fun (game: string) ->
-        game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+    |> intercept
+    |> PSeq.map (fun (game: string) ->
+        game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) 
+        |> List.ofArray
+        |> parseGame
     )
-    |> Array.Parallel.map parseGame
-    |> Array.toList
 
-let parseAll = prepareText >> parallelProcess
-let parse count = prepareText >> Array.take count >> parallelProcess
+let parseAll = prepareText >> parallelProcess id
+let parse count = prepareText >> parallelProcess (List.take count)
     
