@@ -1,6 +1,6 @@
 ﻿module SerializeTests
 
-open JsonRpc
+open JsonSerializer
 open Xunit
 open Types.Command
 open TestHelper

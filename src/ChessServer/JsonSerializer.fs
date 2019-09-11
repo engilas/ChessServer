@@ -1,4 +1,4 @@
-﻿module JsonRpc 
+﻿module JsonSerializer 
 
 [<AutoOpen>]
 module private Internal =

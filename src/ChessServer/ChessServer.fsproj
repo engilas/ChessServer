@@ -25,7 +25,7 @@
     <Compile Include="Session\SessionTypes.fs" />
     <Compile Include="Session\SessionAgent.fs" />
     <Compile Include="Session\Session.fs" />
-    <Compile Include="JsonRpc.fs" />
+    <Compile Include="JsonSerializer.fs" />
     <Compile Include="MatchManager.fs" />
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="SocketManager.fs" />

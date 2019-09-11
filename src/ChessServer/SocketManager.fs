@@ -50,8 +50,8 @@ let processConnection (connection: WebSocket) connectionId = async {
         let json = serialize obj
         writeSocket json
 
-    let pushNotify = pushMessage JsonRpc.serializeNotify
-    let pushResponse id = pushMessage (JsonRpc.serializeResponse id)
+    let pushNotify = pushMessage JsonSerializer.serializeNotify
+    let pushResponse id = pushMessage (JsonSerializer.serializeResponse id)
 
     startNotificator pushNotify ctsNotificator.Token 
     |> Async.Start
@@ -79,7 +79,7 @@ let processConnection (connection: WebSocket) connectionId = async {
             try
                 let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
                 printfn "%s" msg // todo replace to logger
-                let id, command = JsonRpc.deserializeRequest msg
+                let id, command = JsonSerializer.deserializeRequest msg
                 let! response = processCommand command clientChannel
                 match response with
                 | Some r -> pushResponse id r
