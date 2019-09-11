@@ -9,6 +9,7 @@ open Types.Channel
 open FsUnit.Xunit
 open TestHelper
 open FSharp.Collections.ParallelSeq
+open Types.Domain
 
 let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
 let getPgnMoves count = parse count pgnFiles
