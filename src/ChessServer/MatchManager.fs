@@ -16,27 +16,31 @@ module private Internal =
 
     let agent = MailboxProcessor.Start(fun inbox -> 
         let rec matcherLoop channels = async {
-            let channels = 
-                match channels with
-                | first::second::lst -> 
-                    logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
-                    let whiteSession, blackSession = createSession first second
-                    first.ChangeState <| Matched whiteSession
-                    second.ChangeState <| Matched blackSession
-                    let notify = SessionStartNotify {FirstMove = White}
-                    first.PushNotification notify
-                    second.PushNotification notify
-                    lst
-                | lst -> lst
+            try
+                let channels = 
+                    match channels with
+                    | first::second::lst ->
+                        logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
+                        let whiteSession, blackSession = createSession first second
+                        first.ChangeState <| Matched whiteSession
+                        second.ChangeState <| Matched blackSession
+                        let notify = SessionStartNotify {FirstMove = White}
+                        first.PushNotification notify
+                        second.PushNotification notify
+                        lst
+                    | lst -> lst
 
-            let! command = inbox.Receive()
+                let! command = inbox.Receive()
 
-            let list =
-                match command with
-                | Add channel -> channel :: channels
-                | Remove channel -> channels |> List.filter (fun x -> x.Id <> channel.Id)
+                let list =
+                    match command with
+                    | Add channel -> channel :: channels
+                    | Remove channel -> channels |> List.filter (fun x -> x.Id <> channel.Id)
 
-            return! matcherLoop list
+                return! matcherLoop list
+            with e ->
+                raise e
+                //todo log error 
         }
         matcherLoop []
     )

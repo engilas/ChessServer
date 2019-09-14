@@ -25,14 +25,14 @@ let ``chat check notification`` () =
         | _ -> failTest "should be empty notify"
 
     whiteChat "w"
-    checkNotify channels.BlackNotify "w"
-    checkEmptyNotify channels.WhiteNotify
+    checkNotify channels.Black.GetNotify "w"
+    checkEmptyNotify channels.White.GetNotify
     
     channels.Reset()
     
     blackChat "b"
-    checkNotify channels.WhiteNotify "b"
-    checkEmptyNotify channels.BlackNotify
+    checkNotify channels.White.GetNotify "b"
+    checkEmptyNotify channels.Black.GetNotify
 
 [<Fact>]
 let ``close session check notification`` () =
@@ -49,19 +49,19 @@ let ``close session check notification`` () =
     let channels = channelInfo()
 
     let sw, _ = channels.CreateSession()
-    checkInternal sw channels.BlackNotify channels.WhiteNotify "white"
+    checkInternal sw channels.Black.GetNotify channels.White.GetNotify "white"
     
     channels.Reset()
     
     let _, sb = channels.CreateSession()
-    checkInternal sb channels.WhiteNotify channels.BlackNotify "black"
+    checkInternal sb channels.White.GetNotify channels.Black.GetNotify "black"
     
 [<Fact>]
 let ``close session check new state`` () =
     // setup
     let channels = channelInfo()
     let call f = f()
-    let checkStates() = [channels.WhiteState; channels.BlackState] |> List.iter (call >> should equal New)
+    let checkStates() = [channels.White.GetState; channels.Black.GetState] |> List.iter (call >> should equal New)
 
     let testAction session = 
         channels.Reset()

@@ -1,5 +1,7 @@
 ﻿module SessionBase
 
+open System.Threading
+open System.Threading.Tasks
 open Session
 open Types.Channel
 open Types.Command
@@ -51,28 +53,42 @@ let moveStub = {
 type TestChannel = {
     Id: string
     Channel: ClientChannel
+    GetNotify: unit -> Notify list
+    GetState: unit -> ClientState
+    Reset: unit -> unit
+    WaitStateChanged: unit -> Async<unit>
+    WaitNotify: unit -> Async<unit>
 }
 
 type TestChannels = {
     White: TestChannel
     Black: TestChannel
     CreateSession: unit -> Session * Session
-    WhiteNotify: unit -> Notify list
-    BlackNotify: unit -> Notify list
-    WhiteState: unit -> ClientState
-    BlackState: unit -> ClientState
     Reset: unit -> unit
 }
 
 let channelInfo () =
-    let createChannel() =
+    let createTestChannel id =
         let notifyAgent = createStateHistoryAgent()
         let stateAgent = createStateAgent New
+        
+        let stateEvent = new SemaphoreSlim(0)
+        let notifyEvent = new SemaphoreSlim(0)
+        
+        let waitNewState() =
+            stateEvent.WaitAsync() |> Async.AwaitTask
+            
+        let waitNewNotify() =
+            notifyEvent.WaitAsync() |> Async.AwaitTask
+        
         let channel = {
-            Id = ""
-            PushNotification = fun n -> notifyAgent.Post <| PushState n 
+            Id = id
+            PushNotification = fun n ->
+                notifyAgent.Post <| PushState n
+                notifyEvent.Release() |> ignore
             ChangeState = fun s -> 
                 stateAgent.Post <| SetState s
+                stateEvent.Release() |> ignore
         }
         let checkNotify() = notifyAgent.PostAndReply GetHistory
         let checkState() = 
@@ -83,28 +99,25 @@ let channelInfo () =
             notifyAgent.Post <| Clear
             stateAgent.Post <| SetState New 
 
-        channel, checkNotify, checkState, reset
+        //channel, checkNotify, checkState, reset, waitNewState, waitNewNotify
+        {
+            Id = id
+            Channel = channel
+            GetNotify = checkNotify
+            GetState = checkState
+            Reset = reset
+            WaitStateChanged = waitNewState
+            WaitNotify = waitNewNotify
+        }
         
-    let wChannel, wCheckNotify, wCheckState, wReset = createChannel()
-    let bChannel, bCheckNotify, bCheckState, bReset = createChannel()
-    let whiteId = "w"
-    let blackId = "b"
+    let white = createTestChannel "w"
+    let black = createTestChannel "b"
     
     {
-        White = {
-            Id = whiteId
-            Channel = wChannel
-        }
-        Black = {
-            Id = blackId
-            Channel = bChannel
-        }
-        WhiteNotify = wCheckNotify
-        BlackNotify = bCheckNotify
-        WhiteState = wCheckState
-        BlackState = bCheckState
-        Reset = wReset >> bReset
-        CreateSession = fun () -> createSession wChannel bChannel
+        White = white
+        Black = black
+        Reset = white.Reset >> black.Reset
+        CreateSession = fun () -> createSession white.Channel black.Channel
     }
 
 let getMove src dst = {moveStub with Src = positionFromString src; Dst = positionFromString dst}

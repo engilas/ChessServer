@@ -13,14 +13,15 @@
     </None>
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
+    <Compile Include="SessionBase.fs" />
     <Compile Include="Session\PgnParser.fs" />
-    <Compile Include="Session\SessionBase.fs" />
     <Compile Include="Session\SessionTestData.fs" />
     <Compile Include="Session\PgnTests.fs" />
     <Compile Include="Session\SessionMoveTests.fs" />
     <Compile Include="Session\SessionStuffTests.fs" />
     <Compile Include="SerializeTests.fs" />
     <Compile Include="ChessHelperTests.fs" />
+    <Compile Include="MatcherTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

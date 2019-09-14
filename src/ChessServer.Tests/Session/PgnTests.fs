@@ -49,9 +49,9 @@ let ``process pgn files on session and check correctness`` () =
 
         game
         |> List.iteri (fun m row -> 
-            processMove sw channels.BlackNotify row.WhiteMove
+            processMove sw channels.Black.GetNotify row.WhiteMove
             match row.BlackMove with
-            | Some move -> processMove sb channels.WhiteNotify move
+            | Some move -> processMove sb channels.White.GetNotify move
             | None -> ()
         )
     )
