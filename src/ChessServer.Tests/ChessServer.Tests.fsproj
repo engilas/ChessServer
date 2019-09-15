@@ -22,6 +22,7 @@
     <Compile Include="SerializeTests.fs" />
     <Compile Include="ChessHelperTests.fs" />
     <Compile Include="MatcherTests.fs" />
+    <Compile Include="CommandProcessorTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

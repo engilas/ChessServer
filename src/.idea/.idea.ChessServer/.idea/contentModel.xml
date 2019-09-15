@@ -45,6 +45,7 @@
         <e p="bin" t="ExcludeRecursive" />
         <e p="ChessHelperTests.fs" t="Include" />
         <e p="ChessServer.Tests.fsproj" t="IncludeRecursive" />
+        <e p="CommandProcessorTests.fs" t="Include" />
         <e p="FsUnitExtensions.fs" t="Include" />
         <e p="MatcherTests.fs" t="Include" />
         <e p="obj" t="ExcludeRecursive" />

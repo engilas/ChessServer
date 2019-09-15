@@ -94,15 +94,17 @@ module Internal =
             logger.LogError(e, "Error occurred while processing command")
             getErrorResponse <| sprintf "Internal error: %s" e.Message
     
+let createClientChannel channelId notify =
+    let agent = processAgent channelId New processCommand
+    let postAndReplyAsync x = agent.PostAndAsyncReply(fun channel -> x, channel)
 
-open Internal
+    let makeRequest request channel = (request, channel) |> (Regular >> postAndReplyAsync)
+    let changeState = ChangeState >> postAndReplyAsync >> ignore
     
-let createCommandProcessor channel =
-    let agent = processAgent channel New processCommand
-    let postAndReply x = agent.PostAndAsyncReply(fun channel -> x, channel)
-
-    let makeRequest request channel = (request, channel) |> (Regular >> postAndReply)
-    let changeState = ChangeState >> postAndReply >> ignore
-
-    (makeRequest, changeState)
+    makeRequest,
+    {
+        Id = channelId
+        PushNotification = notify
+        ChangeState = changeState
+    }
 

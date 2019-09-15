@@ -56,13 +56,7 @@ let processConnection (connection: WebSocket) connectionId = async {
     startNotificator pushNotify ctsNotificator.Token 
     |> Async.Start
         
-    let processCommand, changeState = createCommandProcessor connectionId
-
-    let clientChannel : ClientChannel = {
-        Id = connectionId
-        PushNotification = pushNotify
-        ChangeState = changeState
-    }
+    let processCommand, clientChannel = createClientChannel connectionId pushNotify
 
     let closeConnection closeStatus description = async {
         do! processCommand DisconnectCommand clientChannel |> Async.Ignore
