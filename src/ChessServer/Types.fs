@@ -80,13 +80,14 @@ module Command =
 
 module Channel =
     open Command
-
-    type MoveResult = 
-    | Ok
+    
+    type MoveError =
     | NotYourTurn
     | InvalidMove
     | InvalidInput of string
     | Other of string
+
+    type MoveResult = Result<unit, MoveError>
 
     type Session = {
         CreateMove: MoveCommand -> MoveResult

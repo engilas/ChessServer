@@ -13,10 +13,6 @@ open EngineMappers
 [<AutoOpen>]
 module private Internal =
     let logger = Logging.getLogger "SessionAgent"
-    
-    
-        
-    
 
 let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult>) onEndGame = 
     let opponentColor =
@@ -54,13 +50,13 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
             then
                 let notify = MoveNotify <| getMoveDescriptionFromEngine state.Engine
                 opponentChannel.PushNotification notify
-                replyChannel.Reply Ok
+                replyChannel.Reply <| Ok ()
                 {state with Next = opponentColor}
             else
-                replyChannel.Reply InvalidMove
+                replyChannel.Reply <| Error InvalidMove
                 state
         else
-            replyChannel.Reply NotYourTurn
+            replyChannel.Reply <| Error NotYourTurn
             state
 
     match checkEndGame state.Engine with

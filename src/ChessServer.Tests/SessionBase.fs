@@ -1,5 +1,6 @@
 ﻿module SessionBase
 
+open System
 open System.Threading
 open System.Threading.Tasks
 open Session
@@ -56,8 +57,8 @@ type TestChannel = {
     GetNotify: unit -> Notify list
     GetState: unit -> ClientState
     Reset: unit -> unit
-    WaitStateChanged: unit -> Async<unit>
-    WaitNotify: unit -> Async<unit>
+    WaitStateChanged: TimeSpan -> Async<bool>
+    WaitNotify: TimeSpan -> Async<bool>
 }
 
 type TestChannels = {
@@ -74,12 +75,7 @@ let channelInfo () =
         
         let stateEvent = new SemaphoreSlim(0)
         let notifyEvent = new SemaphoreSlim(0)
-        
-        let waitNewState() =
-            stateEvent.WaitAsync() |> Async.AwaitTask
-            
-        let waitNewNotify() =
-            notifyEvent.WaitAsync() |> Async.AwaitTask
+        let wait (event: SemaphoreSlim) timeout = event.WaitAsync(timeout: TimeSpan) |> Async.AwaitTask
         
         let channel = {
             Id = id
@@ -106,8 +102,8 @@ let channelInfo () =
             GetNotify = checkNotify
             GetState = checkState
             Reset = reset
-            WaitStateChanged = waitNewState
-            WaitNotify = waitNewNotify
+            WaitStateChanged = wait stateEvent
+            WaitNotify = wait notifyEvent
         }
         
     let white = createTestChannel "w"

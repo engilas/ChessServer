@@ -11,7 +11,7 @@ open ChessHelper
 let makeValidMove session move = 
     session.CreateMove move
     |> function
-    | Ok -> ()
+    | Ok _ -> ()
     | _ -> failTest "wrong move result"
 
 let makeValidMove2 session src dst = getMove src dst |> makeValidMove session
@@ -20,11 +20,11 @@ let correctWhiteMove = getMove "a2" "a4"
 let correctBlackMove = getMove "a7" "a5"
 
 let checkNotYourTurn = function
-| NotYourTurn -> ()
+| Error NotYourTurn -> ()
 | _ -> failTest "wrong move result"
 
 let checkInvalidMove = function
-| InvalidMove -> ()
+| Error InvalidMove -> ()
 | _ -> failTest "wrong move result"
 
 let validWhiteMovesData() = validWhiteMovesData()

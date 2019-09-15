@@ -40,15 +40,17 @@ module Internal =
         | NotYourTurn -> "Not your turn"
         | InvalidMove -> "Invalid move"
         | InvalidInput msg -> sprintf "Invalid input parameter: %s" msg
+        | Other msg -> sprintf "Other error: %s" msg
         | _ -> invalidArg "error" (sprintf "unknown error %A" error)
 
-    let processCommand cmd channel (state: ClientState) = 
-        let getErrorResponse msg = Some <| ErrorResponse {Message=msg}
+    let processCommand cmd channel (state: ClientState) =
+        let getErrorResponse msg = Some <| ErrorResponse {Message = msg}
+        let getErrorResponseF msg args = Some <| ErrorResponse {Message = sprintf msg args}
         let changeState x = channel.ChangeState x |> ignore //avoid dead lock in mailbox
         let getInvalidStateError error =
             logger.LogInformation(sprintf "Can't process command %A for channel %s with state %A" cmd channel.Id state)
             getErrorResponse error
-
+         
         try
             match cmd with
             | PingCommand ping -> 
@@ -56,9 +58,12 @@ module Internal =
             | MatchCommand ->
                 match state with
                 | New ->
-                    startMatch channel
-                    changeState Matching
-                    Some <| MatchResponse {Message="match started"}
+                    match startMatch channel with
+                    | Ok (AddResult _) ->
+                        changeState Matching
+                        Some <| MatchResponse {Message="match started"}
+                    | Ok x -> failwithf "invalid response %A" x
+                    | Error e -> getErrorResponseF "Matching error: %A" e
                 | _ -> getInvalidStateError "Already matched"
             | ChatCommand chat ->
                 match state with
@@ -71,15 +76,17 @@ module Internal =
                 | Matched session ->
                     let result = session.CreateMove move
                     match result with
-                    | Ok -> None
-                    | x -> getErrorResponse <| sprintf "Move error: %s" (parseMoveError x)
+                    | Ok _ -> None
+                    | Error x -> getErrorResponseF "Move error: %s" (parseMoveError x)
                 | _ -> getInvalidStateError "Not matched"
             | DisconnectCommand ->
                 match state with
-                | Matching -> stopMatch channel
-                | Matched session -> session.CloseSession "Player disconnected"
-                | _ -> ()
-                None
+                | Matching ->
+                    match stopMatch channel with
+                    | Ok (RemoveResult Removed) -> None
+                    | _ -> getErrorResponse "Fail to remove channel from matcher queue"
+                | Matched session -> session.CloseSession "Player disconnected"; None
+                | _ -> None
             | x ->
                 failwithf "no processor for the command %A" x
                 None
