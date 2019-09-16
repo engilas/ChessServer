@@ -61,7 +61,7 @@ let ``close session check new state`` () =
     // setup
     let channels = channelInfo()
     let call f = f()
-    let checkStates() = [channels.White.GetState; channels.Black.GetState] |> List.iter (call >> should equal New)
+    let checkStates() = [channels.White.Channel.GetState; channels.Black.Channel.GetState] |> List.iter (call >> should equal New)
 
     let testAction session = 
         channels.Reset()

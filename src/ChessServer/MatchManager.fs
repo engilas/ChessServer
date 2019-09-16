@@ -1,21 +1,27 @@
 ﻿module MatchManager
 open Helper
+open Types.Channel
 
-type RemoveResult = Removed | ChannelNotFound
+type RemoveResult = Removed
 type AddResult = Queued | OpponentFound 
-
-type MatcherStatus =
-    | RemoveResult of RemoveResult
-    | AddResult of AddResult
     
-type MatcherError =
+type AddError =
     | AlreadyQueued
 
-type MatcherResult = Result<MatcherStatus, MatcherError>
+type RemoveError =
+    | ChannelNotFound
+
+type MatcherResult =
+    | AddResult of Result<AddResult, AddError>
+    | RemoveResult of Result<RemoveResult, RemoveError>
+
+type Matcher = {
+    StartMatch: ClientChannel -> Result<AddResult, AddError>
+    StopMatch: ClientChannel -> Result<RemoveResult, RemoveError>
+}
 
 [<AutoOpen>]
 module private Internal =
-    open Types.Channel
     open Types.Command
     open Types.Domain
     open Microsoft.Extensions.Logging
@@ -29,7 +35,7 @@ module private Internal =
     
     type MatcherMessage = MatcherCommand * AsyncReplyChannel<MatcherResult>
 
-    let agent = MailboxProcessor<MatcherMessage>.Start(fun inbox -> 
+    let createAgent() = MailboxProcessor<MatcherMessage>.Start(fun inbox -> 
         let rec matcherLoop channels = async {
             try
                 let! command, reply = inbox.Receive()
@@ -38,31 +44,31 @@ module private Internal =
                 | first::second::lst ->
                     logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
                     let whiteSession, blackSession = createSession first second
-                    first.ChangeState <| Matched whiteSession
-                    second.ChangeState <| Matched blackSession
-                    let notify = SessionStartNotify {FirstMove = White}
-                    first.PushNotification notify
-                    second.PushNotification notify
-                    reply.Reply <| Ok (AddResult OpponentFound)
+                    first.ChangeState <| Matched blackSession 
+                    second.ChangeState <| Matched whiteSession
+                    SessionStartNotify {Color = Black} |> first.PushNotification
+                    SessionStartNotify {Color = White} |> second.PushNotification
+                    reply.Reply <| AddResult (Ok OpponentFound)
                     lst
                 | lst ->
-                    reply.Reply <| Ok (AddResult Queued)
+                    reply.Reply <| AddResult (Ok Queued)
                     lst
-                    
 
                 let newList =
                     match command with
                     | Add channel ->
                         if channels |> List.exists(fun x -> x.Id = channel.Id) 
-                        then reply.Reply <| Error AlreadyQueued; channels
-                        else channel :: channels |> tryMatch
+                        then reply.Reply <| AddResult (Error AlreadyQueued); channels
+                        else
+                            channel.ChangeState Matching
+                            channel :: channels |> tryMatch
                     | Remove channel ->
                         match channels |> tryRemove (fun x -> x.Id = channel.Id) with
                         | Some lst ->
-                            reply.Reply <| Ok (RemoveResult Removed)
+                            reply.Reply <| RemoveResult (Ok Removed)
                             lst
                         | None ->
-                            reply.Reply <| Ok (RemoveResult ChannelNotFound)
+                            reply.Reply <| RemoveResult (Error ChannelNotFound)
                             channels
 
                 return! matcherLoop newList
@@ -72,5 +78,19 @@ module private Internal =
         matcherLoop []
     )
 
-let startMatch x = agent.PostAndReply(fun channel -> Add x, channel)
-let stopMatch x = agent.PostAndReply(fun channel -> Remove x, channel)
+let createMatcher() =
+    let agent = createAgent()
+    {
+        StartMatch = 
+            fun channel ->
+                let result = agent.PostAndReply(fun x -> Add channel, x)
+                match result with
+                | AddResult x -> x
+                | _ -> failwith "invalid agent response"
+        StopMatch = 
+            fun channel -> 
+                let result = agent.PostAndReply(fun x -> Remove channel, x)
+                match result with
+                | RemoveResult x -> x
+                | _ -> failwith "invalid agent response"
+    }

@@ -7,42 +7,9 @@ open Session
 open Types.Channel
 open Types.Command
 open ChessHelper
+open StateContainer
 
 let applyMany x = List.map (fun f -> f x) >> ignore
-
-type StateAgentMessage<'a> =
-    | SetState of 'a
-    | GetState of AsyncReplyChannel<'a>
-
-type StateHistoryAgentMessage<'a> =
-    | PushState of 'a
-    | GetHistory of AsyncReplyChannel<'a list>
-    | Clear
-
-let createStateAgent state = MailboxProcessor<StateAgentMessage<'a>>.Start(fun inbox ->
-    let rec loop state = async {
-        let! msg = inbox.Receive()
-        let state = 
-            match msg with
-            | GetState channel -> channel.Reply state; state
-            | SetState state -> state
-        return! loop state
-    }
-    loop state
-)
-
-let createStateHistoryAgent() = MailboxProcessor<StateHistoryAgentMessage<'a>>.Start(fun inbox ->
-    let rec loop lst = async {
-        let! msg = inbox.Receive()
-        let newLst = 
-            match msg with
-            | GetHistory channel -> channel.Reply lst; lst
-            | PushState state -> state::lst
-            | Clear -> []
-        return! loop newLst
-    }
-    loop []
-)
 
 let notifyStub = TestNotify {Message=""}
 let moveStub = {
@@ -55,10 +22,9 @@ type TestChannel = {
     Id: string
     Channel: ClientChannel
     GetNotify: unit -> Notify list
-    GetState: unit -> ClientState
     Reset: unit -> unit
-    WaitStateChanged: TimeSpan -> Async<bool>
-    WaitNotify: TimeSpan -> Async<bool>
+    WaitStateChanged: int -> Async<unit>
+    WaitNotify: int -> Async<unit>
 }
 
 type TestChannels = {
@@ -70,44 +36,51 @@ type TestChannels = {
 
 let channelInfo () =
     let createTestChannel id =
-        let notifyAgent = createStateHistoryAgent()
-        let stateAgent = createStateAgent New
+        let notifyContainer = createStateHistoryContainer()
+        let stateContainer = createStateContainer New
         
         let stateEvent = new SemaphoreSlim(0)
         let notifyEvent = new SemaphoreSlim(0)
-        let wait (event: SemaphoreSlim) timeout = event.WaitAsync(timeout: TimeSpan) |> Async.AwaitTask
+
+        let waitState (sem: SemaphoreSlim) matcher
+
+        let waitNotify container (sem: SemaphoreSlim) matcher =
+            let rec wait() = async {
+                do! sem.WaitAsync() |> Async.AwaitTask
+                match container.GetHistory() with
+                | x :: _ when matcher x -> ()
+                | _ -> return! wait()
+            }
+            wait()
         
         let channel = {
             Id = id
             PushNotification = fun n ->
-                notifyAgent.Post <| PushState n
+                notifyContainer.PushState n
                 notifyEvent.Release() |> ignore
             ChangeState = fun s -> 
-                stateAgent.Post <| SetState s
+                stateContainer.SetState s
                 stateEvent.Release() |> ignore
+            GetState = stateContainer.GetState
         }
-        let checkNotify() = notifyAgent.PostAndReply GetHistory
-        let checkState() = 
-            let x = stateAgent.PostAndReply GetState
-            x
 
         let reset() =
-            notifyAgent.Post <| Clear
-            stateAgent.Post <| SetState New 
+            notifyContainer.Clear()
+            stateContainer.SetState New
 
-        //channel, checkNotify, checkState, reset, waitNewState, waitNewNotify
         {
             Id = id
             Channel = channel
-            GetNotify = checkNotify
-            GetState = checkState
+            GetNotify = notifyContainer.GetHistory
             Reset = reset
-            WaitStateChanged = wait stateEvent
-            WaitNotify = wait notifyEvent
+            WaitStateChanged = fun () -> wait stateEvent
+            WaitNotify = fun () -> wait notifyEvent
         }
-        
-    let white = createTestChannel "w"
-    let black = createTestChannel "b"
+    
+    let guid = Guid.NewGuid().ToString()
+
+    let white = createTestChannel (sprintf "w%s" guid)
+    let black = createTestChannel (sprintf "b%s" guid)
     
     {
         White = white

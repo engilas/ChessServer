@@ -8,9 +8,12 @@ open Microsoft.Extensions.Logging
 open Types.Command
 open Types.Channel
 open CommandProcessor
+open StateContainer
 
 [<AutoOpen>]
 module private Internal =
+    open MatchManager
+
     let logger = Logging.getLogger "SocketManager"
 
     let rec startNotificator sendNotify (ct: CancellationToken) = async {
@@ -20,6 +23,8 @@ module private Internal =
         if not ct.IsCancellationRequested then 
             return! startNotificator sendNotify ct
     }
+
+    let matcher = createMatcher()
     
 let processConnection (connection: WebSocket) connectionId = async {
     do! Async.Sleep 1
@@ -55,11 +60,23 @@ let processConnection (connection: WebSocket) connectionId = async {
 
     startNotificator pushNotify ctsNotificator.Token 
     |> Async.Start
+
+    let stateContainer = createStateContainer New
+
+    let channel = {
+        Id = connectionId
+        PushNotification = pushNotify
+        ChangeState =
+            fun newState -> 
+                logger.LogInformation("Channel {0} changing state to {1}", connectionId, newState)
+                stateContainer.SetState newState
+        GetState = stateContainer.GetState
+    }
         
-    let processCommand, clientChannel = createClientChannel connectionId pushNotify
+    let processCommand = createCommandProcessor channel matcher
 
     let closeConnection closeStatus description = async {
-        do! processCommand DisconnectCommand clientChannel |> Async.Ignore
+        do! processCommand DisconnectCommand |> Async.Ignore
 
         ctsNotificator.Cancel()
         do! connection.CloseAsync(closeStatus, description, CancellationToken.None)
@@ -74,14 +91,11 @@ let processConnection (connection: WebSocket) connectionId = async {
                 let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
                 printfn "%s" msg // todo replace to logger
                 let id, command = JsonSerializer.deserializeRequest msg
-                let! response = processCommand command clientChannel
-                match response with
-                | Some r -> pushResponse id r
-                | None -> ()
+                let! response = processCommand command
+                pushResponse id response
             with e ->
                 logger.LogError(e, "Error in read loop")
-                let error = ErrorResponse {Message = sprintf "Error: %s" e.Message}
-                pushResponse -1 error
+                pushResponse -1 (ErrorResponse InternalErrorResponse)
             return! readLoop()
         | true -> 
             do! closeConnection result.CloseStatus.Value result.CloseStatusDescription

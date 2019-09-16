@@ -1,11 +1,14 @@
 ﻿module JsonSerializer 
 
+open Types.Command
+open Helper
+open System.Runtime.Serialization
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
+open ChessServer
+
 [<AutoOpen>]
 module private Internal =
-    open System.Runtime.Serialization
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Linq
-    open ChessServer
 
     [<DataContract>]
     [<CLIMutable>]
@@ -63,12 +66,22 @@ module private Internal =
         let response = createResponse id obj
         serialize response
 
-    let serializeErrorResponse id obj =
-        let response = createErrorResponse id obj
-        serialize response
-        
-open Types.Command
-open Helper
+    let parseMoveError error = 
+        match error with
+        | NotYourTurn -> "Not your turn"
+        | InvalidMove -> "Invalid move"
+        | InvalidInput msg -> sprintf "Invalid input parameter: %s" msg
+        | Other msg -> sprintf "Other error: %s" msg
+        | _ -> invalidArg "error" error "unknown error %A"
+
+    let serializeErrorResponse id error =
+        match error with
+        | InvalidStateErrorResponse msg -> sprintf "InvalidState: %s" msg
+        | MatchingErrorResponse -> "MatchingError"
+        | MoveErrorResponse error -> sprintf "MoveError: %s" (parseMoveError error)
+        | InternalErrorResponse -> "InternalError"
+        |> createErrorResponse id
+        |> serialize
 
 let serializeNotify notify =
     match notify with
@@ -84,8 +97,8 @@ let serializeNotify notify =
 let serializeResponse id response =
     match response with
     | PingResponse r -> serializeResponse id r
-    | MatchResponse r -> serializeResponse id r
     | ErrorResponse r -> serializeErrorResponse id r
+    | OkResponse -> serializeResponse id "Success"
     | _ -> invalidArg "response" response "unknown response"
 
 let deserializeRequest (str:string) =

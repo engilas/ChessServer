@@ -44,7 +44,7 @@ module Command =
     type TestNotify = Message
     type ChatNotify = Message
     type SessionStartNotify = {
-        FirstMove: Color
+        Color: Color
     }
 
     type EndGameNotify = {
@@ -52,7 +52,18 @@ module Command =
         Reason: string
     }
 
-    type ErrorResponse = Message
+    type MoveError =
+    | NotYourTurn
+    | InvalidMove
+    | InvalidInput of string
+    | Other of string
+
+    type ServerError =
+    | InvalidStateErrorResponse of string
+    | MatchingErrorResponse
+    | MoveErrorResponse of MoveError
+    | InternalErrorResponse
+
     type ErrorNotify = ErrorResponse
     
     type Request =
@@ -64,8 +75,8 @@ module Command =
 
     type Response =
     | PingResponse of PingResponse
-    | MatchResponse of MatchResponse
-    | ErrorResponse of ErrorResponse
+    | ErrorResponse of ServerError
+    | OkResponse
 
     type Method = string
 
@@ -80,12 +91,6 @@ module Command =
 
 module Channel =
     open Command
-    
-    type MoveError =
-    | NotYourTurn
-    | InvalidMove
-    | InvalidInput of string
-    | Other of string
 
     type MoveResult = Result<unit, MoveError>
 
@@ -104,4 +109,5 @@ module Channel =
         Id: string
         PushNotification: Notify -> unit
         ChangeState: ClientState -> unit
+        GetState: unit -> ClientState
     }

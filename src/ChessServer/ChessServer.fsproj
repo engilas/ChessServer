@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="StateContainer.fs" />
     <Compile Include="Infrastructure\IocManager.fs" />
     <Compile Include="Infrastructure\Logging.fs" />
     <Compile Include="Infrastructure\IdiomaticDuConverter.fs" />

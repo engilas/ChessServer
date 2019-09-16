@@ -72,7 +72,12 @@ let createSessionAgent state onEndGame = MailboxProcessor<SessionMessage>.Start(
             try 
                 match message with
                 | Regular (move, replyChannel) ->
-                    processRegular state move replyChannel onEndGame
+                    try 
+                        processRegular state move replyChannel onEndGame
+                    with e ->
+                        logger.LogError(e, (sprintf "Exception occurred while processing regular command. Current state: %A" state))
+                        replyChannel.Reply (Error (Other "Internal error"))
+                        state
                 | GetState channel -> channel.Reply state; state
                 | Terminate -> {state with Status = Terminated}
             with e ->

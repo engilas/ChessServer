@@ -63,3 +63,15 @@ let ``deserializeRequest errors`` () =
 }"""        id testMsg
 
     (fun () -> deserializeRequest request) |> should (throwWithMessage "request") invalidArgument
+
+[<Fact>]
+let ``serializeResponse ErrorResponse correctness`` () =
+    let msg = "Invalid move"
+    let errorResponse = MoveErrorResponse InvalidMove |> ErrorResponse
+    let id = 151
+    let result = serializeResponse id errorResponse
+
+    sprintf """{
+  "error": "MoveError: %s",
+  "id": %d
+}""" msg id |> should equal result
