@@ -84,7 +84,10 @@ let createSessionAgent state onEndGame = MailboxProcessor<SessionMessage>.Start(
                 // todo: не вылетит ли исключение при форматтинге %A (уже вылетало)
                 logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
                 state
-        
+        //todo use state container
+        //match nextState.Status with
+        //| Terminated -> ()
+        //| _ -> return! loop nextState
         return! loop nextState
     }
     loop state

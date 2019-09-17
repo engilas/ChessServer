@@ -41,13 +41,13 @@ module private Internal =
                 let! command, reply = inbox.Receive()
                 
                 let tryMatch = function
-                | first::second::lst ->
-                    logger.LogInformation("Matched channels: {1}, {2}", first.Id, second.Id)
-                    let whiteSession, blackSession = createSession first second
-                    first.ChangeState <| Matched blackSession 
-                    second.ChangeState <| Matched whiteSession
-                    SessionStartNotify {Color = Black} |> first.PushNotification
-                    SessionStartNotify {Color = White} |> second.PushNotification
+                | black::white::lst ->
+                    logger.LogInformation("Matched channels: {1}, {2}", white.Id, black.Id)
+                    let whiteSession, blackSession = createSession white black
+                    white.ChangeState <| Matched whiteSession
+                    black.ChangeState <| Matched  blackSession 
+                    SessionStartNotify {Color = White} |> white.PushNotification
+                    SessionStartNotify {Color = Black} |> black.PushNotification
                     reply.Reply <| AddResult (Ok OpponentFound)
                     lst
                 | lst ->

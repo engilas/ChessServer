@@ -23,8 +23,8 @@ type TestChannel = {
     Channel: ClientChannel
     GetNotify: unit -> Notify list
     Reset: unit -> unit
-    WaitStateChanged: int -> Async<unit>
-    WaitNotify: int -> Async<unit>
+    //WaitStateChanged: (ClientState -> bool) -> Async<ClientState>
+   // WaitNotify: (Notify -> bool) -> Async<Notify>
 }
 
 type TestChannels = {
@@ -39,28 +39,10 @@ let channelInfo () =
         let notifyContainer = createStateHistoryContainer()
         let stateContainer = createStateContainer New
         
-        let stateEvent = new SemaphoreSlim(0)
-        let notifyEvent = new SemaphoreSlim(0)
-
-        let waitState (sem: SemaphoreSlim) matcher
-
-        let waitNotify container (sem: SemaphoreSlim) matcher =
-            let rec wait() = async {
-                do! sem.WaitAsync() |> Async.AwaitTask
-                match container.GetHistory() with
-                | x :: _ when matcher x -> ()
-                | _ -> return! wait()
-            }
-            wait()
-        
         let channel = {
             Id = id
-            PushNotification = fun n ->
-                notifyContainer.PushState n
-                notifyEvent.Release() |> ignore
-            ChangeState = fun s -> 
-                stateContainer.SetState s
-                stateEvent.Release() |> ignore
+            PushNotification = notifyContainer.PushState
+            ChangeState = stateContainer.SetState
             GetState = stateContainer.GetState
         }
 
@@ -73,8 +55,8 @@ let channelInfo () =
             Channel = channel
             GetNotify = notifyContainer.GetHistory
             Reset = reset
-            WaitStateChanged = fun () -> wait stateEvent
-            WaitNotify = fun () -> wait notifyEvent
+            //WaitStateChanged = stateContainer.WaitState
+            //WaitNotify = notifyContainer.WaitState
         }
     
     let guid = Guid.NewGuid().ToString()

@@ -10,6 +10,8 @@ open SessionBase
 open MatchManager
 open StateContainer
 open System.Threading
+open ChessHelper
+open SessionTypes
 
 let getChannel matcher = 
     let channels = channelInfo()
@@ -95,17 +97,16 @@ let ``test chat command - invalid state``() = async {
 [<Fact>]
 let ``test chat command - correctness``() = async {
     let matcher = createMatcher()
-    let query1, _ = getChannel matcher
-    let query2, info2 = getChannel matcher
+    let whiteQuery, _ = getChannel matcher
+    let blackQuery, blackInfo = getChannel matcher
 
-    do! query1 MatchCommand |> checkOkResult
-    do! query2 MatchCommand |> checkOkResult
+    do! whiteQuery MatchCommand |> checkOkResult
+    do! blackQuery MatchCommand |> checkOkResult
 
-    do! ChatCommand {Message = "test"} |> query1 |> checkOkResult
-    do! info2.WaitNotify
-    match info2.GetNotify() with
+    do! ChatCommand {Message = "test"} |> whiteQuery |> checkOkResult
+    match blackInfo.GetNotify() with
     | ChatNotify {Message=msg} :: _ -> msg |> equals "test"
-    | x -> failTest "No chat notify"
+    | _ -> failTest "No chat notify"
 }
 
 [<Fact>]
@@ -130,7 +131,7 @@ let ``test move command - invalid state``() = async {
 let ``test move command - invalid move``() = async {
     let matcher = createMatcher()
     let query1, _ = getChannel matcher
-    let query2, info2 = getChannel matcher
+    let query2, _ = getChannel matcher
 
     let makeInvalidMove query error = async {
         let move = {Src = 0uy; Dst = 0uy; PawnPromotion = None}
@@ -146,16 +147,69 @@ let ``test move command - invalid move``() = async {
     do! makeInvalidMove query2 NotYourTurn
 }
 
-//[<Fact>]
-//let ``test move command - correctness``() = async {
-//    let matcher = createMatcher()
-//    let query1, _ = getChannel matcher
-//    let query2, _ = getChannel matcher
+[<Fact>]
+let ``test move command - correctness``() = async {
+    let matcher = createMatcher()
+    let whiteQuery, whiteInfo = getChannel matcher
+    let blackQuery, blackInfo = getChannel matcher
 
-//    let makeValidMove move = async {
-//        let! result = query (MoveCommand move)
-//        match result with
-//        | ErrorResponse (InvalidStateErrorResponse msg) -> msg |> should haveSubstring "Not matched"
-//        | _ -> failTest "invalid result"
-//    }
-//}
+    let makeValidMove query src dst oppentNotify = async {
+        let move = {Src = positionFromString src; Dst = positionFromString dst; PawnPromotion = None}
+        let! result = query (MoveCommand move)
+        match result with
+        | OkResponse -> ()
+        | _ -> failTest "invalid result"
+        match oppentNotify() with
+        | MoveNotify {Primary = {Src = src; Dst = dst}} :: _ 
+            when src = move.Src && dst = move.Dst -> ()
+        | x -> failTest "invalid notify"
+    }
+
+    do! whiteQuery MatchCommand |> checkOkResult
+    do! blackQuery MatchCommand |> checkOkResult
+
+    
+    do! makeValidMove whiteQuery "a2" "a4" blackInfo.GetNotify
+    do! makeValidMove blackQuery "a7" "a6" whiteInfo.GetNotify
+}
+
+[<Fact>]
+let ``test disconnect command - new state - doing nothing``() = async {
+    let whiteQuery, _ = getChannelSimple()
+    do! whiteQuery DisconnectCommand |> checkOkResult
+}
+
+[<Fact>]
+let ``test disconnect command - matching state - stop matching``() = async {
+    let matcher = createMatcher()
+    let whiteQuery, whiteInfo = getChannel matcher
+    do! whiteQuery MatchCommand |> checkOkResult
+    do! whiteQuery DisconnectCommand |> checkOkResult
+    match matcher.StopMatch whiteInfo.Channel with
+    | Error ChannelNotFound -> () // already stopped
+    | _ -> failTest "matching should be stopped"
+}
+
+[<Fact>]
+let ``test disconnect command - active session - stop session``() = async {
+    let matcher = createMatcher()
+    let whiteQuery, whiteInfo = getChannel matcher
+    let blackQuery, blackInfo = getChannel matcher
+    do! whiteQuery MatchCommand |> checkOkResult
+    do! blackQuery MatchCommand |> checkOkResult
+
+    let session = 
+        match blackInfo.Channel.GetState() with
+        | Matched session -> session
+        | x -> failTest "invalid state"
+
+    do! whiteQuery DisconnectCommand |> checkOkResult
+
+    let checkState = function
+    | New -> ()
+    | x -> failTest "invalid state"
+    checkState <| whiteInfo.Channel.GetState()
+    checkState <| blackInfo.Channel.GetState()
+
+    (fun () -> session.ChatMessage "") |> should throw typeof<SessionException>
+}
