@@ -2,6 +2,7 @@
 
 open System
 open Types.Domain
+open Types.Command
 open EngineMappers
 open ChessEngine.Engine
 open Helper

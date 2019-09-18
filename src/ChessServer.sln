@@ -7,6 +7,10 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer", "ChessServer\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Tests", "ChessServer.Tests\ChessServer.Tests.fsproj", "{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Client", "ChessServer.Client\ChessServer.Client.fsproj", "{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Types", "ChessServer.Types\ChessServer.Types.fsproj", "{3A691C47-2000-4528-BCE3-FD22DF286445}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A691C47-2000-4528-BCE3-FD22DF286445}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A691C47-2000-4528-BCE3-FD22DF286445}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A691C47-2000-4528-BCE3-FD22DF286445}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A691C47-2000-4528-BCE3-FD22DF286445}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

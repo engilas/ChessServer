@@ -27,19 +27,11 @@ module private Internal =
     let matcher = createMatcher()
     
 let processConnection (connection: WebSocket) connectionId = async {
-    do! Async.Sleep 1
-
-    let buffer : byte[] = Array.zeroCreate 4096
-
-    let readSocket() = connection.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None)
-                        |> Async.AwaitTask
 
     use writeAgent = MailboxProcessor.Start(fun inbox ->
         let rec messageLoop() = async {
             let! msg = inbox.Receive()
-            let bytes = Encoding.UTF8.GetBytes(msg:string)
-            do! connection.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None)
-                |> Async.AwaitTask
+            do! Socket.write connection msg
             return! messageLoop()  
         }
         messageLoop()
@@ -74,33 +66,44 @@ let processConnection (connection: WebSocket) connectionId = async {
     }
         
     let processCommand = createCommandProcessor channel matcher
+    
+    let processSocketMsg msg = async {
+        printfn "%s" msg // todo replace to logger
+        let id, command = JsonSerializer.deserializeRequest msg
+        let! response = processCommand command
+        pushResponse id response
+    }
+    
+    let errorAction (e: exn) = async {
+        logger.LogError(e, "Error in read loop")
+        pushResponse -1 (ErrorResponse InternalErrorResponse)
+    }
 
-    let closeConnection closeStatus description = async {
+    let closeConnection() = async {
         do! processCommand DisconnectCommand |> Async.Ignore
-
         ctsNotificator.Cancel()
-        do! connection.CloseAsync(closeStatus, description, CancellationToken.None)
-            |> Async.AwaitTask
     }
+    
+    do! Socket.startReader connection processSocketMsg errorAction closeConnection
 
-    let rec readLoop() = async {
-        let! result = readSocket()
-        match result.CloseStatus.HasValue with
-        | false -> 
-            try
-                let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
-                printfn "%s" msg // todo replace to logger
-                let id, command = JsonSerializer.deserializeRequest msg
-                let! response = processCommand command
-                pushResponse id response
-            with e ->
-                logger.LogError(e, "Error in read loop")
-                pushResponse -1 (ErrorResponse InternalErrorResponse)
-            return! readLoop()
-        | true -> 
-            do! closeConnection result.CloseStatus.Value result.CloseStatusDescription
-    }
-    do! readLoop()
+//    let rec readLoop() = async {
+//        let! result = readSocket()
+//        match result.CloseStatus.HasValue with
+//        | false -> 
+//            try
+//                let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
+//                printfn "%s" msg // todo replace to logger
+//                let id, command = JsonSerializer.deserializeRequest msg
+//                let! response = processCommand command
+//                pushResponse id response
+//            with e ->
+//                logger.LogError(e, "Error in read loop")
+//                pushResponse -1 (ErrorResponse InternalErrorResponse)
+//            return! readLoop()
+//        | true -> 
+//            do! closeConnection result.CloseStatus.Value result.CloseStatusDescription
+//    }
+//    do! readLoop()
 }
 
 

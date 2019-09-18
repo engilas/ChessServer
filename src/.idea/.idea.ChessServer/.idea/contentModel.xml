@@ -34,11 +34,18 @@
           <e p="SessionTypes.fs" t="Include" />
         </e>
         <e p="SocketManager.fs" t="Include" />
+        <e p="StateContainer.fs" t="Include" />
         <e p="Types.fs" t="Include" />
         <e p="WebRoot" t="Include">
           <e p="main.css" t="Include" />
         </e>
         <e p="WebSocketMiddleware.fs" t="Include" />
+      </e>
+      <e p="ChessServer.Client" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessConnection.fs" t="Include" />
+        <e p="ChessServer.Client.fsproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive" />
       </e>
       <e p="ChessServer.sln" t="IncludeFlat" />
       <e p="ChessServer.Tests" t="IncludeRecursive">
@@ -64,6 +71,14 @@
         </e>
         <e p="SessionBase.fs" t="Include" />
         <e p="TestHelper.fs" t="Include" />
+      </e>
+      <e p="ChessServer.Types" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessServer.Types.fsproj" t="IncludeRecursive" />
+        <e p="Command.fs" t="Include" />
+        <e p="Domain.fs" t="Include" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="Socket.fs" t="Include" />
       </e>
       <e p="packages" t="ExcludeRecursive" />
     </e>

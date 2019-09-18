@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="Domain.fs" />
+      <Compile Include="Command.fs" />
+      <Compile Include="Socket.fs" />
+    </ItemGroup>
+
+</Project>

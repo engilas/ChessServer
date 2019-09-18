@@ -41,6 +41,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ChessServer.Types\ChessServer.Types.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="ChessCoreEngine">
       <HintPath>..\..\lib\ChessCoreEngine.dll</HintPath>
     </Reference>
