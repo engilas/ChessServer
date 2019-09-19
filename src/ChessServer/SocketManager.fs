@@ -31,7 +31,7 @@ let processConnection (connection: WebSocket) connectionId = async {
     use writeAgent = MailboxProcessor.Start(fun inbox ->
         let rec messageLoop() = async {
             let! msg = inbox.Receive()
-            do! Socket.write connection msg
+            do! Socket.write connection msg CancellationToken.None
             return! messageLoop()  
         }
         messageLoop()
@@ -47,8 +47,8 @@ let processConnection (connection: WebSocket) connectionId = async {
         let json = serialize obj
         writeSocket json
 
-    let pushNotify = pushMessage JsonSerializer.serializeNotify
-    let pushResponse id = pushMessage (JsonSerializer.serializeResponse id)
+    let pushNotify = pushMessage Serializer.serializeNotify
+    let pushResponse id = pushMessage (Serializer.serializeResponse id)
 
     startNotificator pushNotify ctsNotificator.Token 
     |> Async.Start
@@ -69,14 +69,14 @@ let processConnection (connection: WebSocket) connectionId = async {
     
     let processSocketMsg msg = async {
         printfn "%s" msg // todo replace to logger
-        let id, command = JsonSerializer.deserializeRequest msg
-        let! response = processCommand command
+        let {MessageId = id; Request = request} = Serializer.deserializeClientMessage msg
+        let! response = processCommand request
         pushResponse id response
     }
     
     let errorAction (e: exn) = async {
         logger.LogError(e, "Error in read loop")
-        pushResponse -1 (ErrorResponse InternalErrorResponse)
+        pushResponse String.Empty (ErrorResponse InternalErrorResponse)
     }
 
     let closeConnection() = async {
@@ -84,7 +84,7 @@ let processConnection (connection: WebSocket) connectionId = async {
         ctsNotificator.Cancel()
     }
     
-    do! Socket.startReader connection processSocketMsg errorAction closeConnection
+    do! Socket.startReader connection processSocketMsg errorAction closeConnection CancellationToken.None
 
 //    let rec readLoop() = async {
 //        let! result = readSocket()

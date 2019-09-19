@@ -39,8 +39,6 @@ type ServerError =
 | MatchingErrorResponse
 | MoveErrorResponse of MoveError
 | InternalErrorResponse
-
-type ErrorNotify = ErrorResponse
     
 type Request =
 | PingCommand of PingCommand
@@ -54,13 +52,24 @@ type Response =
 | ErrorResponse of ServerError
 | OkResponse
 
-type Method = string
-
 type Notify =
 | TestNotify of TestNotify
-| ErrorNotify of Method * ErrorNotify
 | ChatNotify of ChatNotify
 | MoveNotify of MoveDescription
 | EndGameNotify of EndGameNotify
 | SessionStartNotify of SessionStartNotify
 | SessionCloseNotify of Message
+
+type ClientMessage = {
+    MessageId: string
+    Request: Request
+}
+
+type ResponseDto = {
+    MessageId: string
+    Response: Response
+}
+
+type ServerMessage = 
+| Response of ResponseDto
+| Notification of Notify

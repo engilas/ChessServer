@@ -110,13 +110,12 @@ let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder
 
 let configureAppConfiguration (args: string []) (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
     config
-        .AddJsonFile("appsettings.json", false, true)
+        .AddJsonFile("appsettings.json", true, true)
         .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName , true)
         .AddEnvironmentVariables() 
         .AddCommandLine(args) |> ignore
 
-[<EntryPoint>]
-let main args =
+let createWebHostBuilder args =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
     WebHostBuilder()
@@ -127,6 +126,10 @@ let main args =
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
         .ConfigureLogging(configureLogging)
+
+[<EntryPoint>]
+let main args =
+    createWebHostBuilder(args)
         .Build()
         .Run()
     0
