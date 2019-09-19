@@ -12,8 +12,11 @@ type ServerConnection = {
 }
 
 let createConnection url = async {
+    let cts = new CancellationTokenSource()
+    let ct = cts.Token
+    
     let socket = new ClientWebSocket()
-    do! socket.ConnectAsync url |> Async.AwaitTask
+    do! socket.ConnectAsync(url, ct) |> Async.AwaitTask
 
     let cts = new CancellationTokenSource()
     let ct = cts.Token

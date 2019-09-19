@@ -1,12 +1,11 @@
 ﻿module SessionMoveTests
 
 open Types.Channel
+open Types.Command
 open Xunit
 open TestHelper
 open SessionBase
-open FsUnit.Xunit
 open SessionTestData
-open ChessHelper
 
 let makeValidMove session move = 
     session.CreateMove move

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\shork\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.reporters.netcoreapp10.dll" t="Include" />
+    <e p="C:\Users\shork\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.utility.netcoreapp10.dll" t="Include" />
+    <e p="C:\Users\shork\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.visualstudio.dotnetcore.testadapter.dll" t="Include" />
+    <e p="C:\Users\shork\.Rider2019.2\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\shork\.Rider2019.2\system\resharper-host\local\Transient\ReSharperHost\v192\SolutionCaches\_ConsoleApp2.-99032879.00" t="ExcludeRecursive" />
+    <e p="C:\Users\shork\source\repos\ChessServer\src" t="IncludeFlat">
+      <e p="ChessServer" t="IncludeRecursive">
+        <e p="appsettings.Development.json" t="Include" />
+        <e p="appsettings.json" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessHelper.fs" t="Include" />
+        <e p="ChessServer.fsproj" t="IncludeRecursive" />
+        <e p="CommandProcessor.fs" t="Include" />
+        <e p="EngineMappers.fs" t="Include" />
+        <e p="Infrastructure" t="Include">
+          <e p="IocManager.fs" t="Include" />
+          <e p="Logging.fs" t="Include" />
+        </e>
+        <e p="MatchManager.fs" t="Include" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="Program.fs" t="Include" />
+        <e p="Properties" t="Include">
+          <e p="launchSettings.json" t="Include" />
+        </e>
+        <e p="Session" t="Include">
+          <e p="Session.fs" t="Include" />
+          <e p="SessionAgent.fs" t="Include" />
+          <e p="SessionTypes.fs" t="Include" />
+        </e>
+        <e p="SocketManager.fs" t="Include" />
+        <e p="StateContainer.fs" t="Include" />
+        <e p="Types.fs" t="Include" />
+        <e p="WebRoot" t="Include">
+          <e p="main.css" t="Include" />
+        </e>
+        <e p="WebSocketMiddleware.fs" t="Include" />
+      </e>
+      <e p="ChessServer.Client" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessConnection.fs" t="Include" />
+        <e p="ChessServer.Client.fsproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive" />
+      </e>
+      <e p="ChessServer.Tests" t="IncludeRecursive">
+        <e p="appsettings.json" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessHelperTests.fs" t="Include" />
+        <e p="ChessServer.Tests.fsproj" t="IncludeRecursive" />
+        <e p="Client" t="Include">
+          <e p="ClientCommandsTest.fs" t="Include" />
+        </e>
+        <e p="CommandProcessorTests.fs" t="Include" />
+        <e p="FsUnitExtensions.fs" t="Include" />
+        <e p="MatcherTests.fs" t="Include" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="pgn" t="Include">
+          <e p="ct-2341-2323-2019.4.14.pgn" t="Include" />
+          <e p="ficsgamesdb_search_87938.pgn" t="Include" />
+          <e p="Kasparov,-G._vs_Bartels,-Simon_2016.06.02.pgn" t="Include" />
+        </e>
+        <e p="SerializeTests.fs" t="Include" />
+        <e p="Session" t="Include">
+          <e p="PgnParser.fs" t="Include" />
+          <e p="PgnTests.fs" t="Include" />
+          <e p="SessionMoveTests.fs" t="Include" />
+          <e p="SessionStuffTests.fs" t="Include" />
+          <e p="SessionTestData.fs" t="Include" />
+        </e>
+        <e p="SessionBase.fs" t="Include" />
+        <e p="TestHelper.fs" t="Include" />
+      </e>
+      <e p="ChessServer.Types" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessServer.Types.fsproj" t="IncludeRecursive" />
+        <e p="Command.fs" t="Include" />
+        <e p="Domain.fs" t="Include" />
+        <e p="Helper.fs" t="Include" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="Serializer.fs" t="Include" />
+        <e p="Socket.fs" t="Include" />
+      </e>
+      <e p="ConsoleApp2.sln" t="IncludeFlat" />
+      <e p="packages" t="ExcludeRecursive" />
+    </e>
+  </component>
+</project>

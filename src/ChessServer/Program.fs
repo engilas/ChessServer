@@ -110,7 +110,7 @@ let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder
 
 let configureAppConfiguration (args: string []) (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
     config
-        .AddJsonFile("appsettings.json", true, true)
+        .AddJsonFile("appsettings.json", false, true)
         .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName , true)
         .AddEnvironmentVariables() 
         .AddCommandLine(args) |> ignore
