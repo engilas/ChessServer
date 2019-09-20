@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Client\ClientCommandsTest.fs" />
     <None Include="pgn\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="FsUnitExtensions.fs" />
     <Compile Include="TestHelper.fs" />
+    <Compile Include="Client\ClientCommandsTest.fs" />
     <Compile Include="SessionBase.fs" />
     <Compile Include="Session\PgnParser.fs" />
     <Compile Include="Session\SessionTestData.fs" />

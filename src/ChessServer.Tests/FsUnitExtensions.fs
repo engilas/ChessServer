@@ -1,5 +1,4 @@
-﻿
-module FsUnit.Xunit
+﻿module FsUnit.Xunit
 
 open System
 open NHamcrest.Core

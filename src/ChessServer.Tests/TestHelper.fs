@@ -1,4 +1,5 @@
-﻿module TestHelper
+﻿[<AutoOpen>]
+module TestHelper
 
 open FsUnit.Xunit
 open System

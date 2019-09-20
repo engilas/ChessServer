@@ -4,14 +4,15 @@ open System.Net.WebSockets
 open Types.Command
 open System
 open System.Threading
+open System.Threading.Tasks
 
 type ServerConnection = {
-    Ping: PingCommand -> Async<PingResponse>
+    Ping: PingCommand -> CancellationToken -> Async<PingResponse>
     Start: unit -> Async<unit>
     Close: unit -> unit
 }
 
-let createConnection url = async {
+let createConnection url processError processDisconnect = async {
     let cts = new CancellationTokenSource()
     let ct = cts.Token
     
@@ -36,18 +37,18 @@ let createConnection url = async {
         | Notification n -> inputNotifies.Trigger n
         async.Return ()
     
-    let reader = Socket.startReader socket readMsg (fun _ -> async.Return ()) (fun _ -> async.Return ()) ct
+    let reader = Socket.startReader socket readMsg processError processDisconnect ct
     
-    let ping command = async {
+    let ping command ct = async {
         let messageId = generateMessageId()
         let sub = inputResponses.Publish |> Event.filter (checkMessageId messageId)
-        let resultTask = Async.AwaitEvent sub |> Async.StartAsTask
+        let resultTask = Async.StartAsTask(Async.AwaitEvent sub, TaskCreationOptions.None, ct)
         let request = {MessageId = messageId; Request = PingCommand command}
         do! Serializer.serializeRequest request |> write
         let! msg = resultTask |> Async.AwaitTask //or task
         match msg.Response with
         | PingResponse r -> return r
-        | _ -> return failwith ""
+        | _ -> return failwith "Invalid response command"
     }
     
     return {

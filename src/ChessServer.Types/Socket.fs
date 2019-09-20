@@ -26,20 +26,34 @@ let startReader (connection: WebSocket) processMsg processError processDisconnec
     //todo проверить хватит ли размера буффера
     //todo попробовать передать большие сообщение, посмотреть как было реализовано в агаторе
     let buffer: byte[] = Array.zeroCreate 4096
+
+    let closeConnection closeStatus closeDesc = async {
+        do! processDisconnect()
+        do! connection.CloseAsync(closeStatus, closeDesc, CancellationToken.None)
+            |> Async.AwaitTask
+    }
+
     let rec readLoop() = async {
-        let! (response, bytes) = read connection buffer ct
-        match response.CloseStatus.HasValue with
-        | false ->
-            try
-                let msg = Encoding.UTF8.GetString(bytes |> Array.ofList)
-                do! processMsg msg
-            with e ->
+        try 
+            let! (response, bytes) = read connection buffer ct
+            match response.CloseStatus.HasValue with
+            | false ->
+                try
+                    let msg = Encoding.UTF8.GetString(bytes |> Array.ofList)
+                    do! processMsg msg
+                    return! readLoop()
+                with e ->
+                    do! processError e
+                return! readLoop()
+            | true ->
+                do! closeConnection response.CloseStatus.Value response.CloseStatusDescription
+        with e ->
+            match e with
+            | :? OperationCanceledException as e -> 
+                do! closeConnection WebSocketCloseStatus.NormalClosure "Connection closed"
+            | e ->
                 do! processError e
-            return! readLoop()
-        | true ->
-            do! processDisconnect()
-            do! connection.CloseAsync(response.CloseStatus.Value, response.CloseStatusDescription, CancellationToken.None)
-                |> Async.AwaitTask
+                do! closeConnection WebSocketCloseStatus.InternalServerError "Internal error occured"
     }
     return! readLoop()
 }

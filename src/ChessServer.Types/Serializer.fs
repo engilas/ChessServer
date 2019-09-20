@@ -8,11 +8,6 @@ module private Internal =
     let serialize obj = Compact.serialize obj
     let inline deserialize str = Compact.deserialize str
 
-    type ResponseDto = {
-        Id: string
-        Response: Response
-    }
-
 let serializeRequest (request: ClientMessage) = serialize request
 
 let serializeNotify notify = 
@@ -20,7 +15,7 @@ let serializeNotify notify =
     serialize message
 
 let serializeResponse id response =
-    let message = { Id = id; Response = response }
+    let message = Response { MessageId = id; Response = response }
     serialize message
 
 let deserializeClientMessage str : ClientMessage = deserialize str
