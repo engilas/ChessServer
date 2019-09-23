@@ -11,7 +11,6 @@ open StateContainer
 
 let applyMany x = List.map (fun f -> f x) >> ignore
 
-let notifyStub = TestNotify {Message=""}
 let moveStub = {
     Src = 0uy
     Dst = 0uy

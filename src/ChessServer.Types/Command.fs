@@ -53,7 +53,6 @@ type Response =
 | OkResponse
 
 type Notify =
-| TestNotify of TestNotify
 | ChatNotify of ChatNotify
 | MoveNotify of MoveDescription
 | EndGameNotify of EndGameNotify

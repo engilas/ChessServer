@@ -6,8 +6,17 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
+open Types.Domain
 
-type ServerConnection (url, errorHandler, disconnectHandler) =
+type NotificationHandler = {
+    ChatNotification: string -> unit
+    MoveNotification: MoveDescription -> unit
+    EndGameNotification: EndGameNotify -> unit
+    SessionStartNotification: SessionStartNotify -> unit
+    SessionCloseNotify: string -> unit
+}
+
+type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler) =
     let cts = new CancellationTokenSource()
     let socket = new ClientWebSocket()
     let write msg = Socket.write socket msg cts.Token
@@ -33,6 +42,16 @@ type ServerConnection (url, errorHandler, disconnectHandler) =
         let! result = resultTask
         return result.Response
     }
+
+    let notificationObserver =
+        inputNotifies.Publish.Subscribe(fun notification ->
+            match notification with
+            | ChatNotify n -> notificationHandler.ChatNotification n.Message
+            | MoveNotify n -> notificationHandler.MoveNotification n
+            | EndGameNotify n -> notificationHandler.EndGameNotification n
+            | SessionStartNotify n -> notificationHandler.SessionStartNotification n
+            | SessionCloseNotify n -> notificationHandler.SessionCloseNotify n.Message
+        )
     
     interface IDisposable with
         member this.Dispose() = this.Close()
@@ -80,3 +99,4 @@ type ServerConnection (url, errorHandler, disconnectHandler) =
         
     member this.Close() =
         cts.Cancel()
+        notificationObserver.Dispose()

@@ -37,25 +37,25 @@ module private Internal =
 
     let createAgent() = MailboxProcessor<MatcherMessage>.Start(fun inbox -> 
         let rec matcherLoop channels = async {
-            try
-                let! command, reply = inbox.Receive()
+            let! newList = async {
+                try
+                    let! command, reply = inbox.Receive()
                 
-                let tryMatch = function
-                | black::white::lst ->
-                    logger.LogInformation("Matched channels: {1}, {2}", white.Id, black.Id)
-                    let whiteSession, blackSession = createSession white black
-                    white.ChangeState <| Matched whiteSession
-                    black.ChangeState <| Matched  blackSession 
-                    SessionStartNotify {Color = White} |> white.PushNotification
-                    SessionStartNotify {Color = Black} |> black.PushNotification
-                    reply.Reply <| AddResult (Ok OpponentFound)
-                    lst
-                | lst ->
-                    reply.Reply <| AddResult (Ok Queued)
-                    lst
+                    let tryMatch = function
+                    | black::white::lst ->
+                        logger.LogInformation("Matched channels: {1}, {2}", white.Id, black.Id)
+                        let whiteSession, blackSession = createSession white black
+                        white.ChangeState <| Matched whiteSession
+                        black.ChangeState <| Matched  blackSession 
+                        SessionStartNotify {Color = White} |> white.PushNotification
+                        SessionStartNotify {Color = Black} |> black.PushNotification
+                        reply.Reply <| AddResult (Ok OpponentFound)
+                        lst
+                    | lst ->
+                        reply.Reply <| AddResult (Ok Queued)
+                        lst
 
-                let newList =
-                    match command with
+                    return match command with
                     | Add channel ->
                         if channels |> List.exists(fun x -> x.Id = channel.Id) 
                         then reply.Reply <| AddResult (Error AlreadyQueued); channels
@@ -70,10 +70,12 @@ module private Internal =
                         | None ->
                             reply.Reply <| RemoveResult (Error ChannelNotFound)
                             channels
+                with e ->
+                    logger.LogError(e, "Error in matcher loop")
+                    return channels
+            }
 
-                return! matcherLoop newList
-            with e ->
-                logger.LogError(e, "Error in matcher loop")
+            return! matcherLoop newList
         }
         matcherLoop []
     )

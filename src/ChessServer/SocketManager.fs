@@ -16,13 +16,15 @@ module private Internal =
 
     let logger = Logging.getLogger "SocketManager"
 
-    let rec startNotificator sendNotify (ct: CancellationToken) = async {
-        do sendNotify (TestNotify {Message = "test"})
-        do! Async.Sleep 100000
+    //todo make periodical ping later
 
-        if not ct.IsCancellationRequested then 
-            return! startNotificator sendNotify ct
-    }
+    //let rec startNotificator sendNotify (ct: CancellationToken) = async {
+    //    do sendNotify (TestNotify {Message = "test"})
+    //    do! Async.Sleep 100000
+
+    //    if not ct.IsCancellationRequested then 
+    //        return! startNotificator sendNotify ct
+    //}
 
     let matcher = createMatcher()
     
@@ -50,8 +52,8 @@ let processConnection (connection: WebSocket) connectionId = async {
     let pushNotify = pushMessage Serializer.serializeNotify
     let pushResponse id = pushMessage (Serializer.serializeResponse id)
 
-    startNotificator pushNotify ctsNotificator.Token 
-    |> Async.Start
+    //startNotificator pushNotify ctsNotificator.Token 
+    //|> Async.Start
 
     let stateContainer = createStateContainer New
 
