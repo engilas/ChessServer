@@ -20,7 +20,6 @@
     <Compile Include="Session\PgnTests.fs" />
     <Compile Include="Session\SessionMoveTests.fs" />
     <Compile Include="Session\SessionStuffTests.fs" />
-    <Compile Include="SerializeTests.fs" />
     <Compile Include="ChessHelperTests.fs" />
     <Compile Include="MatcherTests.fs" />
     <Compile Include="CommandProcessorTests.fs" />

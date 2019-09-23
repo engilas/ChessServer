@@ -61,7 +61,6 @@
           <e p="ficsgamesdb_search_87938.pgn" t="Include" />
           <e p="Kasparov,-G._vs_Bartels,-Simon_2016.06.02.pgn" t="Include" />
         </e>
-        <e p="SerializeTests.fs" t="Include" />
         <e p="Session" t="Include">
           <e p="PgnParser.fs" t="Include" />
           <e p="PgnTests.fs" t="Include" />

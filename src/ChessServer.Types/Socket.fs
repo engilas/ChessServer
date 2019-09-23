@@ -5,7 +5,6 @@ open System.Text
 open System
 open System.Threading
 
-
 let read (connection: WebSocket) buffer ct =
     let rec readInternal total = async {
         let! response = connection.ReceiveAsync(new ArraySegment<byte>(buffer), ct) |> Async.AwaitTask
@@ -16,13 +15,12 @@ let read (connection: WebSocket) buffer ct =
     }
     readInternal []
 
-let write (connection: WebSocket) msg ct = async { 
+let write (connection: WebSocket) msg ct =
     let bytes = Encoding.UTF8.GetBytes(msg:string)
-    do! connection.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct)
+    connection.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct)
         |> Async.AwaitTask
-}
-
-let startReader (connection: WebSocket) processMsg processError processDisconnect ct = async {
+        
+let startReader (connection: WebSocket) processMsg processError processDisconnect ct =
     //todo проверить хватит ли размера буффера
     //todo попробовать передать большие сообщение, посмотреть как было реализовано в агаторе
     let buffer: byte[] = Array.zeroCreate 4096
@@ -34,26 +32,26 @@ let startReader (connection: WebSocket) processMsg processError processDisconnec
     }
 
     let rec readLoop() = async {
-        try 
-            let! (response, bytes) = read connection buffer ct
-            match response.CloseStatus.HasValue with
-            | false ->
-                try
-                    let msg = Encoding.UTF8.GetString(bytes |> Array.ofList)
-                    do! processMsg msg
-                    return! readLoop()
-                with e ->
-                    do! processError e
-                return! readLoop()
-            | true ->
-                do! closeConnection response.CloseStatus.Value response.CloseStatusDescription
-        with e ->
-            match e with
-            | :? OperationCanceledException as e -> 
-                do! closeConnection WebSocketCloseStatus.NormalClosure "Connection closed"
-            | e ->
+        let! response, bytes = read connection buffer ct
+        match response.CloseStatus.HasValue with
+        | false ->
+            try
+                let msg = Encoding.UTF8.GetString(bytes |> Array.ofList)
+                do! processMsg msg
+            with e ->
                 do! processError e
-                do! closeConnection WebSocketCloseStatus.InternalServerError "Internal error occured"
+            return! readLoop()
+        | true ->
+            do! closeConnection response.CloseStatus.Value response.CloseStatusDescription
     }
-    return! readLoop()
-}
+    
+    try
+        readLoop()
+    with e -> async {
+        match e with
+        | :? OperationCanceledException -> 
+            do! closeConnection WebSocketCloseStatus.NormalClosure "Connection closed"
+        | e ->
+            do! processError e
+            do! closeConnection WebSocketCloseStatus.InternalServerError "Internal error occured"
+    }
