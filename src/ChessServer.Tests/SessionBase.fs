@@ -22,8 +22,8 @@ type TestChannel = {
     Channel: ClientChannel
     GetNotify: unit -> Notify list
     Reset: unit -> unit
-    //WaitStateChanged: (ClientState -> bool) -> Async<ClientState>
-   // WaitNotify: (Notify -> bool) -> Async<Notify>
+    WaitStateChanged: (ClientState -> bool) -> Task<ClientState>
+    WaitNotify: (Notify -> bool) -> Task<Notify>
 }
 
 type TestChannels = {
@@ -54,8 +54,8 @@ let channelInfo () =
             Channel = channel
             GetNotify = notifyContainer.GetHistory
             Reset = reset
-            //WaitStateChanged = stateContainer.WaitState
-            //WaitNotify = notifyContainer.WaitState
+            WaitStateChanged = stateContainer.WaitState
+            WaitNotify = notifyContainer.WaitState
         }
     
     let guid = Guid.NewGuid().ToString()

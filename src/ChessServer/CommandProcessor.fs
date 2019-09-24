@@ -61,7 +61,7 @@ module Internal =
                     match matcher.StopMatch channel with
                     | Ok _ -> OkResponse
                     | Error e -> getErrorResponse MatchingErrorResponse e
-                | Matched session -> session.CloseSession "Player disconnected"; OkResponse
+                | Matched session -> session.CloseSession OpponentDisconnected; OkResponse
                 | _ -> OkResponse
             | x ->
                 failwithf "no processor for the command %A" x

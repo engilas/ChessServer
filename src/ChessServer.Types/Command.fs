@@ -52,12 +52,15 @@ type Response =
 | ErrorResponse of ServerError
 | OkResponse
 
+type SessionCloseReason =
+| OpponentDisconnected
+
 type Notify =
 | ChatNotify of ChatNotify
 | MoveNotify of MoveDescription
 | EndGameNotify of EndGameNotify
 | SessionStartNotify of SessionStartNotify
-| SessionCloseNotify of Message
+| SessionCloseNotify of SessionCloseReason
 
 type ClientMessage = {
     MessageId: string

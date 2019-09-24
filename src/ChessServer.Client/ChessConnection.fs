@@ -6,6 +6,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
+open Types.Command
 open Types.Domain
 
 type NotificationHandler = {
@@ -13,7 +14,7 @@ type NotificationHandler = {
     MoveNotification: MoveDescription -> unit
     EndGameNotification: EndGameNotify -> unit
     SessionStartNotification: SessionStartNotify -> unit
-    SessionCloseNotify: string -> unit
+    SessionCloseNotification: SessionCloseReason -> unit
 }
 
 type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler) =
@@ -50,7 +51,7 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
             | MoveNotify n -> notificationHandler.MoveNotification n
             | EndGameNotify n -> notificationHandler.EndGameNotification n
             | SessionStartNotify n -> notificationHandler.SessionStartNotification n
-            | SessionCloseNotify n -> notificationHandler.SessionCloseNotify n.Message
+            | SessionCloseNotify n -> notificationHandler.SessionCloseNotification n
         )
     
     interface IDisposable with
@@ -94,7 +95,7 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         let! response = DisconnectCommand |> getResponse ct
         match response with
         | OkResponse -> ()
-        | _ -> failwith "Invalid response command"
+        | x -> failwithf "Invalid response command %A" x
     }
         
     member this.Close() =

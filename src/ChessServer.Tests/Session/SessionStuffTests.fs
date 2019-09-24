@@ -36,25 +36,25 @@ let ``chat check notification`` () =
 
 [<Fact>]
 let ``close session check notification`` () =
-    let checkInternal session notify1 notify2 msg = 
+    let checkInternal session notify1 notify2 = 
         let closeNotifyMsg notify = 
             match notify with
-            | SessionCloseNotify {Message = msg} :: _ -> msg
+            | SessionCloseNotify OpponentDisconnected :: _ -> ()
             | _ -> failTest "not a session close notify"
             
-        session.CloseSession msg
-        notify1() |> closeNotifyMsg |> should haveSubstring msg
+        session.CloseSession OpponentDisconnected
+        notify1() |> closeNotifyMsg
         notify2() |> should be Empty
     
     let channels = channelInfo()
 
     let sw, _ = channels.CreateSession()
-    checkInternal sw channels.Black.GetNotify channels.White.GetNotify "white"
+    checkInternal sw channels.Black.GetNotify channels.White.GetNotify
     
     channels.Reset()
     
     let _, sb = channels.CreateSession()
-    checkInternal sb channels.White.GetNotify channels.Black.GetNotify "black"
+    checkInternal sb channels.White.GetNotify channels.Black.GetNotify
     
 [<Fact>]
 let ``close session check new state`` () =
@@ -65,7 +65,7 @@ let ``close session check new state`` () =
 
     let testAction session = 
         channels.Reset()
-        session.CloseSession "test"
+        session.CloseSession OpponentDisconnected
         checkStates()
 
     // assert
@@ -82,17 +82,17 @@ let ``close session check exception on any function calls`` () =
     let sessionError = typeof<SessionException>
     let channels = channelInfo()
     let checkAnyFunctionThrows s =
-        (fun () -> s.CloseSession "test") |> should throw sessionError
+        (fun () -> s.CloseSession OpponentDisconnected) |> should throw sessionError
         (fun () -> s.ChatMessage "test") |> should throw sessionError
         (fun () -> s.CreateMove moveStub) |> should throw sessionError
     
     let sw, sb = channels.CreateSession()
-    sw.CloseSession "white"
+    sw.CloseSession OpponentDisconnected
     checkAnyFunctionThrows sw
     checkAnyFunctionThrows sb
     
     let sw, sb = channels.CreateSession()
-    sb.CloseSession "black"
+    sb.CloseSession OpponentDisconnected
     checkAnyFunctionThrows sw
     checkAnyFunctionThrows sb
 

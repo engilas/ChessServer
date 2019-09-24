@@ -7,7 +7,7 @@ type MoveResult = Result<unit, MoveError>
 type Session = {
     CreateMove: MoveCommand -> MoveResult
     ChatMessage: string -> unit
-    CloseSession: string -> unit
+    CloseSession: SessionCloseReason -> unit
 }
 
 type ClientState = 

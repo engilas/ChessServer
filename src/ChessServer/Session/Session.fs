@@ -47,9 +47,8 @@ let createSessionWithFen fen whitePlayer blackPlayer =
         | White -> push blackPlayer msg
         | Black -> push whitePlayer msg
 
-    let closeFun color msg =
-        let notify channel = 
-            SessionCloseNotify {Message = sprintf "Session closed with reason: %s" msg} |> channel.PushNotification
+    let closeFun color =
+        let notify channel = SessionCloseNotify >> channel.PushNotification 
 
         whitePlayer.ChangeState New |> ignore
         blackPlayer.ChangeState New |> ignore

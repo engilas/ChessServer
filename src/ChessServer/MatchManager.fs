@@ -55,21 +55,22 @@ module private Internal =
                         reply.Reply <| AddResult (Ok Queued)
                         lst
 
-                    return match command with
-                    | Add channel ->
-                        if channels |> List.exists(fun x -> x.Id = channel.Id) 
-                        then reply.Reply <| AddResult (Error AlreadyQueued); channels
-                        else
-                            channel.ChangeState Matching
-                            channel :: channels |> tryMatch
-                    | Remove channel ->
-                        match channels |> tryRemove (fun x -> x.Id = channel.Id) with
-                        | Some lst ->
-                            reply.Reply <| RemoveResult (Ok Removed)
-                            lst
-                        | None ->
-                            reply.Reply <| RemoveResult (Error ChannelNotFound)
-                            channels
+                    return
+                        match command with
+                        | Add channel ->
+                            if channels |> List.exists(fun x -> x.Id = channel.Id) 
+                            then reply.Reply <| AddResult (Error AlreadyQueued); channels
+                            else
+                                channel.ChangeState Matching
+                                channel :: channels |> tryMatch
+                        | Remove channel ->
+                            match channels |> tryRemove (fun x -> x.Id = channel.Id) with
+                            | Some lst ->
+                                reply.Reply <| RemoveResult (Ok Removed)
+                                lst
+                            | None ->
+                                reply.Reply <| RemoveResult (Error ChannelNotFound)
+                                channels
                 with e ->
                     logger.LogError(e, "Error in matcher loop")
                     return channels

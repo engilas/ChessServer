@@ -8,8 +8,10 @@ open Microsoft.AspNetCore.Hosting
 open Types.Command
 open System.Threading
 open FSharp.Control.Tasks.V2
+open SessionBase
 open StateContainer
 open Types.Domain
+open FsUnit.Xunit
 
 type PortResourceMessage = AsyncReplyChannel<int>
 
@@ -28,13 +30,15 @@ let portResourceAgent = MailboxProcessor<PortResourceMessage>.Start(fun inbox ->
 
 let notificatorErrorFunc _ = 
     failwith "invalid notification"
+    
+let notificatorEmptyFunc _ = ()
 
 let notificationHandlerStub = {
     ChatNotification = notificatorErrorFunc
     MoveNotification = notificatorErrorFunc
     EndGameNotification = notificatorErrorFunc
     SessionStartNotification = notificatorErrorFunc
-    SessionCloseNotify = notificatorErrorFunc
+    SessionCloseNotification = notificatorErrorFunc
 }
 
 let getConnection notificationHandler (cts: CancellationTokenSource) = task {
@@ -47,8 +51,6 @@ let getConnection notificationHandler (cts: CancellationTokenSource) = task {
     conn.Start() |> ignore
     return conn
 }
-    
-    
 
 [<Fact>]
 let ``test ping command``() = task {
@@ -68,45 +70,31 @@ let ``test match command``() = task {
     }
 
     let cts = new CancellationTokenSource()
-    //use! conn = getConnection notificationHandlerStub cts
 
     use! whiteConn = getConnection handler cts
     use! blackConn = getConnection handler cts
-    
-    //todo wait notify here
 
+    let whiteWait = stateContainer.WaitState (fun {Color = x} -> x = White)
+    let blackWait = stateContainer.WaitState (fun {Color = x} -> x = Black)
+    
     do! whiteConn.Match cts.Token
     do! blackConn.Match cts.Token
-
-    //todo уведомления приходят не сразу!
-    match stateContainer.GetHistory() with
-    | p1 :: p2 :: [] 
-        when 
-        [ p1 ; p2 ]
-        |> (fun lst -> 
-            lst |> List.exists (fun x -> x.Color = White) 
-            && lst |> List.exists (fun x -> x.Color = Black)
-        ) -> ()
-    | x -> failwithf "Invalid notification %A" x
-        
+    
+    let! _ = whiteWait
+    let! _ = blackWait
+    
+    ()
 }
 
 [<Fact>]
 let ``test chat command``() = task {
     let stateContainer = createStateContainer ""
 
-    let checkChatMsg msg = 
-        match stateContainer.GetState() with
-        | x when x = msg -> ()
-        | x -> failwithf "Check chat msg failed %A" x
-
     let handler = {
         notificationHandlerStub with 
             ChatNotification = fun msg -> stateContainer.SetState msg
-            SessionStartNotification = fun _ -> ()
+            SessionStartNotification = notificatorEmptyFunc
     }
-
-    handler.SessionStartNotification {Color = Black}
 
     let cts = new CancellationTokenSource()
     use! whiteConn = getConnection handler cts
@@ -115,18 +103,72 @@ let ``test chat command``() = task {
     do! whiteConn.Match cts.Token
     do! blackConn.Match cts.Token
 
-    let waitTask = stateContainer.WaitState ((=) "white")
+    let whiteWait = stateContainer.WaitState ((=) "white")
+    let blackWait = stateContainer.WaitState ((=) "black")
+    
     do! whiteConn.Chat "white" cts.Token
-    let! _ = waitTask
-    checkChatMsg "white"
+    let! _ = whiteWait
 
-    let waitTask = stateContainer.WaitState ((=) "black")
     do! blackConn.Chat "black" cts.Token
-    let! _ = waitTask
-    checkChatMsg "black"
+    let! _ = blackWait
+    
+    ()
 }
 
-//todo Добавить ждалки стейтов. 
+[<Fact>]
+let ``test move command``() = task {
+    let stateContainer = createStateHistoryContainer()
+
+    let handler = {
+        notificationHandlerStub with 
+            SessionStartNotification = notificatorEmptyFunc
+            MoveNotification = stateContainer.PushState
+    }
+
+    let cts = new CancellationTokenSource()
+    use! whiteConn = getConnection handler cts
+    use! blackConn = getConnection handler cts
+    
+    do! whiteConn.Match cts.Token
+    do! blackConn.Match cts.Token
+    
+    let moveTask = stateContainer.WaitState (fun _ -> true)
+    let move = getMove "a2" "a4"
+    do! whiteConn.Move (getMove "a2" "a4") cts.Token
+    let! moveNotify = moveTask
+    
+    moveNotify.Check |> should equal false
+    moveNotify.Mate |> should equal false
+    moveNotify.Primary.Src |> should equal move.Src
+    moveNotify.Primary.Dst |> should equal move.Dst
+    moveNotify.Secondary |> should equal None
+    moveNotify.PawnPromotion |> should equal None
+    moveNotify.TakenPiecePos |> should equal None
+}
+
+[<Fact>]
+let ``test disconnect command``() = task {
+    let stateContainer = createStateContainer 0
+
+    let handler = {
+        notificationHandlerStub with 
+            SessionStartNotification = notificatorEmptyFunc
+            SessionCloseNotification = fun _ -> stateContainer.SetState 1
+    }
+
+    let cts = new CancellationTokenSource()
+    use! whiteConn = getConnection handler cts
+    use! blackConn = getConnection handler cts
+    
+    do! whiteConn.Match cts.Token
+    do! blackConn.Match cts.Token
+    
+    let waitTask = stateContainer.WaitState ((=) 1)
+    do! whiteConn.Disconnect cts.Token
+    let! notification = waitTask
+    ()
+}
+
 // больше асинхронных комманд (?)
 //Добавить периодический пинг (чтобы клиент пинговал, сервер отвечал, иначе: если сервер не ответит - дисконнект. Если клиент давно не пинговал - дисконнект)
 // добавить восстановление сесии при дисконнекте
