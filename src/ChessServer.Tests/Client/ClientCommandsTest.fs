@@ -73,13 +73,21 @@ let ``test match command``() = task {
     use! whiteConn = getConnection handler cts
     use! blackConn = getConnection handler cts
     
+    //todo wait notify here
+
     do! whiteConn.Match cts.Token
     do! blackConn.Match cts.Token
 
     //todo уведомления приходят не сразу!
     match stateContainer.GetHistory() with
-    | black :: white :: [] when white.Color = White && black.Color = Black -> ()
-    | q -> failwith "Invalid notification"
+    | p1 :: p2 :: [] 
+        when 
+        [ p1 ; p2 ]
+        |> (fun lst -> 
+            lst |> List.exists (fun x -> x.Color = White) 
+            && lst |> List.exists (fun x -> x.Color = Black)
+        ) -> ()
+    | x -> failwithf "Invalid notification %A" x
         
 }
 
@@ -90,7 +98,7 @@ let ``test chat command``() = task {
     let checkChatMsg msg = 
         match stateContainer.GetState() with
         | x when x = msg -> ()
-        | _ -> failwith "Check chat msg failed"
+        | x -> failwithf "Check chat msg failed %A" x
 
     let handler = {
         notificationHandlerStub with 
@@ -107,9 +115,18 @@ let ``test chat command``() = task {
     do! whiteConn.Match cts.Token
     do! blackConn.Match cts.Token
 
+    let waitTask = stateContainer.WaitState ((=) "white")
     do! whiteConn.Chat "white" cts.Token
+    let! _ = waitTask
     checkChatMsg "white"
 
+    let waitTask = stateContainer.WaitState ((=) "black")
     do! blackConn.Chat "black" cts.Token
+    let! _ = waitTask
     checkChatMsg "black"
 }
+
+//todo Добавить ждалки стейтов. 
+// больше асинхронных комманд (?)
+//Добавить периодический пинг (чтобы клиент пинговал, сервер отвечал, иначе: если сервер не ответит - дисконнект. Если клиент давно не пинговал - дисконнект)
+// добавить восстановление сесии при дисконнекте
