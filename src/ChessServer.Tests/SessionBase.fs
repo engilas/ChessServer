@@ -10,7 +10,7 @@ open ChessConnection
 open ChessHelper
 open StateContainer
 
-let applyMany x = List.map (fun f -> f x) >> ignore
+let applyMany f = List.map f >> ignore
 
 let moveStub = {
     Src = 0uy

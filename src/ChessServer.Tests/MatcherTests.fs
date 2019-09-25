@@ -22,17 +22,20 @@ let startMatchCheck matcher channel options result =
 let stopMatchCheck matcher channel result = 
     matcher.StopMatch channel |> (checkOkResult result)
 
-let checkMatched channels =
+let checkMatchedChannels white black =
     let checkMatched state notify color =
         match state with
         | Matched _ -> ()
-        | q -> failTest "Invalid state"
+        | _ -> failTest "Invalid state"
         match notify with
         | SessionStartNotify {Color=x} :: [] when x = color -> ()
         | _ -> failTest "Invalid notification"
+        
+    [white, White; black, Black] |> applyMany (fun (x, color) ->
+        checkMatched <| x.Channel.GetState() <| (x.GetNotify()) <| color
+    )
 
-    checkMatched <| channels.White.Channel.GetState() <| (channels.White.GetNotify()) <| White
-    checkMatched <| channels.Black.Channel.GetState() <| (channels.Black.GetNotify()) <| Black
+let checkMatched channels = checkMatchedChannels channels.White channels.Black
 
 [<Fact>]
 let ``startMatch - test state changed, get notify``() = 
@@ -89,3 +92,26 @@ let ``stress test``() =
     // all should be matched
     let channels = channelInfo()
     startMatchCheck matcher channels.White.Channel defaultMatcherOptions Queued
+    
+[<Fact>]
+let ``test match groups``() =
+    let matcher = createMatcher()
+    
+    let channels1 = channelInfo()
+    let channels2 = channelInfo()
+    
+    let options1 = {Group = Some "1"}
+    let options2 = {Group = Some "2"}
+    
+    startMatchCheck matcher channels1.White.Channel options1 Queued
+    startMatchCheck matcher channels1.Black.Channel options2 Queued
+    
+    [channels1.White; channels1.Black] |> applyMany (fun x ->
+        x.Channel.GetState() |> should equal Matching
+        x.GetNotify() |> should be Empty
+    )
+    
+    startMatchCheck matcher channels2.Black.Channel options1 Queued
+    checkMatchedChannels channels1.White channels2.Black
+    startMatchCheck matcher channels2.White.Channel options2 Queued
+    checkMatchedChannels channels1.Black channels2.White
