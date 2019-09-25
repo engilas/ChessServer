@@ -50,7 +50,9 @@
         <e p="ChessHelperTests.fs" t="Include" />
         <e p="ChessServer.Tests.fsproj" t="IncludeRecursive" />
         <e p="Client" t="Include">
+          <e p="ClientBase.fs" t="Include" />
           <e p="ClientCommandsTest.fs" t="Include" />
+          <e p="PgnIntegrationTest.fs" t="Include" />
         </e>
         <e p="CommandProcessorTests.fs" t="Include" />
         <e p="FsUnitExtensions.fs" t="Include" />
@@ -61,8 +63,8 @@
           <e p="ficsgamesdb_search_87938.pgn" t="Include" />
           <e p="Kasparov,-G._vs_Bartels,-Simon_2016.06.02.pgn" t="Include" />
         </e>
+        <e p="PgnParser.fs" t="Include" />
         <e p="Session" t="Include">
-          <e p="PgnParser.fs" t="Include" />
           <e p="PgnTests.fs" t="Include" />
           <e p="SessionMoveTests.fs" t="Include" />
           <e p="SessionStuffTests.fs" t="Include" />

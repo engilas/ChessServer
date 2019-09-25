@@ -40,8 +40,8 @@ let ``test match command``() = task {
     let whiteWait = stateContainer.WaitState (fun {Color = x} -> x = White)
     let blackWait = stateContainer.WaitState (fun {Color = x} -> x = Black)
     
-    do! whiteConn.Match cts.Token
-    do! blackConn.Match cts.Token
+    do! whiteConn.Match defaultMatcherOptions cts.Token
+    do! blackConn.Match defaultMatcherOptions cts.Token
     
     let! _ = whiteWait
     let! _ = blackWait
@@ -65,8 +65,8 @@ let ``test chat command``() = task {
     use! whiteConn = createConnection handler
     use! blackConn = createConnection handler
     
-    do! whiteConn.Match cts.Token
-    do! blackConn.Match cts.Token
+    do! whiteConn.Match defaultMatcherOptions cts.Token
+    do! blackConn.Match defaultMatcherOptions cts.Token
 
     let whiteWait = stateContainer.WaitState ((=) "white")
     let blackWait = stateContainer.WaitState ((=) "black")
@@ -96,8 +96,8 @@ let ``test move command``() = task {
     use! whiteConn = createConnection handler
     use! blackConn = createConnection handler
     
-    do! whiteConn.Match cts.Token
-    do! blackConn.Match cts.Token
+    do! whiteConn.Match defaultMatcherOptions cts.Token
+    do! blackConn.Match defaultMatcherOptions cts.Token
     
     let moveTask = stateContainer.WaitState (fun _ -> true)
     let move = getMove "a2" "a4"
@@ -131,8 +131,8 @@ let ``test disconnect command``() = task {
     
     let waitTask = stateContainer.WaitState ((=) 1)
 
-    do! whiteConn.Match cts.Token
-    do! blackConn.Match cts.Token
+    do! whiteConn.Match defaultMatcherOptions cts.Token
+    do! blackConn.Match defaultMatcherOptions cts.Token
     
     do! whiteConn.Disconnect cts.Token
     let timeout = Async.Sleep(1000 * 30) |> Async.StartAsTask

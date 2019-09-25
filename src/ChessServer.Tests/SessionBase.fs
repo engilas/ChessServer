@@ -85,3 +85,5 @@ let notificationHandlerStub = {
     SessionStartNotification = notificatorErrorFunc
     SessionCloseNotification = notificatorErrorFunc
 }
+
+let defaultMatcherOptions = { Group = None }

@@ -1,5 +1,6 @@
 ﻿module PgnIntegrationTest
 
+open System
 open Xunit
 open PgnParser
 open ClientBase
@@ -21,12 +22,14 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
             SessionStartNotification = notificatorEmptyFunc
             MoveNotification = stateContainer.PushState
     }
+    
+    let matchOptions = { Group = Some <| Guid.NewGuid().ToString() }
 
     use! whiteConn = createConnection handler
     use! blackConn = createConnection handler
         
-    do! whiteConn.Match ct
-    do! blackConn.Match ct
+    do! whiteConn.Match matchOptions ct
+    do! blackConn.Match matchOptions ct
 
     let processMove (connection: ServerConnection) pgnMove = task {
         let primary = pgnMove.Primary
@@ -51,8 +54,8 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         | None -> ()
 }
 
-//[<Fact(Skip="eq")>]
-[<Fact>]
+[<Fact(Skip="eq")>]
+//[<Fact>]
 let ``process pgn files on session and check correctness`` () = task {
     let cts = new CancellationTokenSource()
     let createConnection = createServer cts

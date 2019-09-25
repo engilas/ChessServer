@@ -34,10 +34,10 @@ module Internal =
         try
             match cmd with
             | PingCommand ping -> PingResponse {Message=ping.Message}
-            | MatchCommand ->
+            | MatchCommand options ->
                 match channel.GetState() with
                 | New ->
-                    match matcher.StartMatch channel with
+                    match matcher.StartMatch channel options with
                     | Ok _ -> OkResponse
                     | Error e -> getErrorResponse MatchingErrorResponse e
                 | x -> getInvalidStateError x "Already matched"

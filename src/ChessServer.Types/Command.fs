@@ -40,9 +40,13 @@ type ServerError =
 | MoveErrorResponse of MoveError
 | InternalErrorResponse
     
+type MatchOptions = {
+    Group: string option
+}
+    
 type Request =
 | PingCommand of PingCommand
-| MatchCommand
+| MatchCommand of MatchOptions
 | ChatCommand of ChatCommand
 | MoveCommand of MoveCommand
 | DisconnectCommand

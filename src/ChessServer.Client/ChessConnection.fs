@@ -70,8 +70,8 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         | _ -> failwith "Invalid response command"
     }
     
-    member this.Match ct = task {
-        let! response = MatchCommand |> getResponse ct
+    member this.Match options ct = task {
+        let! response = MatchCommand options |> getResponse ct
         match response with
         | OkResponse -> ()
         | _ -> failwith "Invalid response command"
