@@ -3,7 +3,7 @@ open Helper
 open Types.Channel
 
 type RemoveResult = Removed
-type AddResult = Queued | OpponentFound 
+type AddResult = Queued
     
 type AddError =
     | AlreadyQueued
@@ -30,18 +30,18 @@ module private Internal =
     let logger = Logging.getLogger "MatchManager"
     
     type MatcherCommand =
-    | Add of ClientChannel
+    | Add of string * ClientChannel
     | Remove of ClientChannel
-    
+
     type MatcherMessage = MatcherCommand * AsyncReplyChannel<MatcherResult>
 
     let createAgent() = MailboxProcessor<MatcherMessage>.Start(fun inbox -> 
-        let rec matcherLoop channels = async {
+        let rec matcherLoop (channels: (string * ClientChannel) list) = async {
             let! newList = async {
                 try
                     let! command, reply = inbox.Receive()
-                
-                    let tryMatch = function
+
+                    let rec tryMatch3 = function
                     | black::white::lst ->
                         logger.LogInformation("Matched channels: {1}, {2}", white.Id, black.Id)
                         let whiteSession, blackSession = createSession white black
@@ -49,22 +49,32 @@ module private Internal =
                         black.ChangeState <| Matched  blackSession 
                         SessionStartNotify {Color = White} |> white.PushNotification
                         SessionStartNotify {Color = Black} |> black.PushNotification
-                        reply.Reply <| AddResult (Ok OpponentFound)
-                        lst
-                    | lst ->
-                        reply.Reply <| AddResult (Ok Queued)
-                        lst
+                        tryMatch3 lst
+                    | x -> x
+                
+                    let tryMatch2 (channels: (string * ClientChannel) list) =
+                        channels
+                        |> List.groupBy fst
+                        |> List.filter (snd >> List.length >> ((<) 1))
+                        |> List.map (fun (key, channels) ->
+                             key, tryMatch3 (channels |> List.map snd)
+                        )
+                        |> List.collect (fun (key, lst) -> lst |> List.map (fun x -> key, x))
+
+                    let findChannel (_, x) ch = x.Id c=
+
+                    let yey q = (fun (_, x) -> x.Id = q.Id)
 
                     return
                         match command with
-                        | Add channel ->
-                            if channels |> List.exists(fun x -> x.Id = channel.Id) 
+                        | Add (key, channel) ->
+                            if channels |> List.exists findChannel 
                             then reply.Reply <| AddResult (Error AlreadyQueued); channels
                             else
                                 channel.ChangeState Matching
-                                channel :: channels |> tryMatch
+                                ((key, channel) :: channels) |> tryMatch2
                         | Remove channel ->
-                            match channels |> tryRemove (fun x -> x.Id = channel.Id) with
+                            match channels |> tryRemove (fun (_, x) -> x.Id = channel.Id) with
                             | Some lst ->
                                 reply.Reply <| RemoveResult (Ok Removed)
                                 lst

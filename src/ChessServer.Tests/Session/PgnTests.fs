@@ -11,10 +11,6 @@ open TestHelper
 open FSharp.Collections.ParallelSeq
 open Types.Domain
 
-let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
-let getPgnMoves count = parse count pgnFiles
-let allPgnMoves() = parseAll pgnFiles
-
 [<Fact(Skip="too long")>]
 let ``test pgn files`` () = allPgnMoves() |> PSeq.toArray |> ignore
 

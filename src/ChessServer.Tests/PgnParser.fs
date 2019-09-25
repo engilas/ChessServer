@@ -231,4 +231,7 @@ let private parallelProcess intercept list =
 
 let parseAll = prepareText >> parallelProcess id
 let parse count = prepareText >> parallelProcess (List.take count)
-    
+
+let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
+let getPgnMoves count = parse count pgnFiles
+let allPgnMoves() = parseAll pgnFiles

@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Session
 open Types.Channel
 open Types.Command
+open ChessConnection
 open ChessHelper
 open StateContainer
 
@@ -71,3 +72,16 @@ let channelInfo () =
     }
 
 let getMove src dst = {moveStub with Src = positionFromString src; Dst = positionFromString dst}
+
+let notificatorErrorFunc _ = 
+    failwith "invalid notification"
+    
+let notificatorEmptyFunc _ = ()
+
+let notificationHandlerStub = {
+    ChatNotification = notificatorErrorFunc
+    MoveNotification = notificatorErrorFunc
+    EndGameNotification = notificatorErrorFunc
+    SessionStartNotification = notificatorErrorFunc
+    SessionCloseNotification = notificatorErrorFunc
+}
