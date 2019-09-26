@@ -56,6 +56,9 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         | None -> ()
 
     do! whiteConn.Close()
+    
+    do! Async.Sleep 1500000
+    
     do! blackConn.Close()
 }
 

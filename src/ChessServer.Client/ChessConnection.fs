@@ -61,7 +61,7 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
     member this.Connect() = socket.ConnectAsync(url, CancellationToken.None)
         
     member this.Start() =
-        readerTask <- Socket.startReader socket readMsg errorHandler disconnectHandler cts.Token |> Async.StartAsTask
+        readerTask <- Socket.startReader socket readMsg errorHandler disconnectHandler CancellationToken.None |> Async.StartAsTask
         readerTask
         
     member this.Ping msg ct = task {
@@ -100,9 +100,14 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
     }
         
     member this.Close() = task {
+        do! this.Disconnect(CancellationToken.None)
         cts.Cancel()
         notificationObserver.Dispose()
+        let qeqqa = 51
+        do! socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnected", CancellationToken.None)
         //wait for exit
+        //do! readerTask
+        //do! Task.Delay 20000
         do! readerTask
     }
         //socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnected", CancellationToken.None).Wait()

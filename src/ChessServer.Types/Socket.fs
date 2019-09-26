@@ -8,11 +8,14 @@ open FSharp.Control.Tasks.V2
 
 let read (connection: WebSocket) buffer ct =
     let rec readInternal total = task {
-        let! response = connection.ReceiveAsync(new ArraySegment<byte>(buffer), ct)
-        let total = total @ (new ArraySegment<byte>(buffer, 0, response.Count) |> List.ofSeq)
-        if response.EndOfMessage
-        then return response, total
-        else return! readInternal total
+        let! response = connection.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None)
+        if response.CloseStatus.HasValue then
+            return response, total
+        else
+            let total = total @ (new ArraySegment<byte>(buffer, 0, response.Count) |> List.ofSeq)
+            if response.EndOfMessage
+            then return response, total
+            else return! readInternal total
     }
     readInternal []
 
@@ -28,6 +31,8 @@ let startReader (connection: WebSocket) processMsg processError processDisconnec
 
     let closeConnection closeStatus closeDesc = async {
         do! processDisconnect()
+        //if connection.State = WebSocketState.
+        let caasedq = connection
         do! connection.CloseAsync(closeStatus, closeDesc, CancellationToken.None)
             |> Async.AwaitTask
     }
@@ -50,10 +55,12 @@ let startReader (connection: WebSocket) processMsg processError processDisconnec
         return! readLoop()
     with e -> 
         match e with
-        | :? OperationCanceledException -> 
-            do! closeConnection WebSocketCloseStatus.NormalClosure "Connection closed"
+        //| :? OperationCanceledException -> 
+        //    do! closeConnection WebSocketCloseStatus.NormalClosure "Connection closed"
         | e ->
+            let qqe = 5
+            do! Async.Sleep 20000
             do! processError e
-            do! closeConnection WebSocketCloseStatus.InternalServerError "Internal error occured"
+            //do! closeConnection WebSocketCloseStatus.InternalServerError "Internal error occured"
     
 }
