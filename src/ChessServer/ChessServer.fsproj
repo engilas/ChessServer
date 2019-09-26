@@ -47,6 +47,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="appsettings*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.0" />
   </ItemGroup>
 

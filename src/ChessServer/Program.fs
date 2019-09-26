@@ -118,7 +118,7 @@ let configureAppConfiguration (args: string []) (context: WebHostBuilderContext)
 let createWebHostBuilder args =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    WebHostBuilder()
+    WebHost.CreateDefaultBuilder(args)
         .UseKestrel()
         .UseContentRoot(contentRoot)
         .UseWebRoot(webRoot)

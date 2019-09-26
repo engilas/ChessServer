@@ -25,6 +25,7 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
     let checkMessageId msgId response = msgId = response.MessageId
     let inputResponses = Event<ResponseDto>()
     let inputNotifies = Event<Notify>()
+    let mutable readerTask : Task = null
     
     let readMsg msg =
         let serverMessage = Serializer.deserializeServerMessage msg
@@ -55,13 +56,13 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         )
     
     interface IDisposable with
-        member this.Dispose() = this.Close()
+        member this.Dispose() = this.Close().Wait()
         
-    member this.Connect() = socket.ConnectAsync(url, cts.Token)
+    member this.Connect() = socket.ConnectAsync(url, CancellationToken.None)
         
-    member this.Start() = task {
-        do! Socket.startReader socket readMsg errorHandler disconnectHandler cts.Token
-    }
+    member this.Start() =
+        readerTask <- Socket.startReader socket readMsg errorHandler disconnectHandler cts.Token |> Async.StartAsTask
+        readerTask
         
     member this.Ping msg ct = task {
         let! response = PingCommand {Message = msg} |> getResponse ct
@@ -98,6 +99,10 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         | x -> failwithf "Invalid response command %A" x
     }
         
-    member this.Close() =
+    member this.Close() = task {
         cts.Cancel()
         notificationObserver.Dispose()
+        //wait for exit
+        do! readerTask
+    }
+        //socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnected", CancellationToken.None).Wait()
