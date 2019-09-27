@@ -28,12 +28,12 @@ module private Internal =
 
     let matcher = createMatcher()
     
-let processConnection (connection: WebSocket) connectionId = async {
+let processConnection (socket: WebSocket) connectionId = async {
 
     use writeAgent = MailboxProcessor.Start(fun inbox ->
         let rec messageLoop() = async {
             let! msg = inbox.Receive()
-            do! Socket.write connection msg CancellationToken.None
+            do! Socket.write socket msg 
             return! messageLoop()  
         }
         messageLoop()
