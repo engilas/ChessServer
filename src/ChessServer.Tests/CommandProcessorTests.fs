@@ -15,7 +15,7 @@ open SessionTypes
 
 let getChannel matcher = 
     let channels = channelInfo()
-    let query = createCommandProcessor channels.White.Channel matcher
+    let query = processCommand matcher channels.White.Channel 
     query, channels.White
 
 let getChannelSimple() = getChannel (createMatcher())
@@ -28,37 +28,34 @@ let matcherStub() =
     }
 
 let checkEmptyNotify getNotify = match getNotify() with [] -> () | _ -> failTest "wrong notify"
-let checkOkResult f = async {
-    let! result = f
+let checkOkResult f = 
+    let result = f
     result |> should equal OkResponse
-}
 
-let matchConnections con1 con2 = async {
-    do! MatchCommand defaultMatcherOptions |> con1 |> checkOkResult
-    do! MatchCommand defaultMatcherOptions |> con2 |> checkOkResult
-}
+let matchConnections con1 con2 =
+    MatchCommand defaultMatcherOptions |> con1 |> checkOkResult
+    MatchCommand defaultMatcherOptions |> con2 |> checkOkResult
+
 
 [<Fact>]
-let ``test change state``() = async {
+let ``test change state``() =
     let query, info = getChannel (createMatcher())
     info.Channel.ChangeState Matching
-    let! response = MatchCommand defaultMatcherOptions |> query
+    let response = MatchCommand defaultMatcherOptions |> query
     match response with
     | ErrorResponse (InvalidStateErrorResponse x) -> x |> should haveSubstring "matched"
     | x -> failTestf "Invalid response %A" x
-}
 
 [<Fact>]
-let ``test ping command``() = async {
+let ``test ping command``() = 
     let query, _ = getChannelSimple()
-    let! response = query (PingCommand {Message="test"}) 
+    let response = query (PingCommand {Message="test"}) 
     match response with
     | PingResponse {Message="test"} -> ()
     | _ -> failTest "invalid response"
-}
 
 [<Fact>]
-let ``test match command - matched``() = async {
+let ``test match command - matched``() = 
     let stateContainer = createStateContainer false
     let matcher = { 
         matcherStub() with
@@ -67,13 +64,12 @@ let ``test match command - matched``() = async {
                 Ok Queued
         }
     let query, info = getChannel matcher
-    do! MatchCommand defaultMatcherOptions |> query |> checkOkResult
+    MatchCommand defaultMatcherOptions |> query |> checkOkResult
     checkEmptyNotify info.GetNotify
     stateContainer.GetState() |> should equal true
-}
 
 [<Fact>]
-let ``test match command - matcher error``() = async {
+let ``test match command - matcher error``() =
     let stateContainer = createStateContainer false
     let matcher = { 
         matcherStub() with
@@ -82,83 +78,76 @@ let ``test match command - matcher error``() = async {
                 Error AlreadyQueued
         }
     let query, info = getChannel matcher
-    let! response = MatchCommand defaultMatcherOptions |> query
+    let response = MatchCommand defaultMatcherOptions |> query
     match response with
     | ErrorResponse MatchingErrorResponse -> ()
     | _ -> failTest "invalid response"
     checkEmptyNotify info.GetNotify
     stateContainer.GetState() |> should equal true
-}
 
 [<Fact>]
-let ``test chat command - invalid state``() = async {
+let ``test chat command - invalid state``() = 
     let query, _ = getChannelSimple()
-    let! result = query (ChatCommand {Message=""}) 
+    let result = query (ChatCommand {Message=""}) 
     match result with
     | ErrorResponse (InvalidStateErrorResponse msg) -> msg |> should haveSubstring "Not matched"
     | _ -> failTest "invalid result"
-}
 
 [<Fact>]
-let ``test chat command - correctness``() = async {
+let ``test chat command - correctness``() = 
     let matcher = createMatcher()
     let whiteQuery, _ = getChannel matcher
     let blackQuery, blackInfo = getChannel matcher
 
-    do! matchConnections whiteQuery blackQuery
+    matchConnections whiteQuery blackQuery
 
-    do! ChatCommand {Message = "test"} |> whiteQuery |> checkOkResult
+    ChatCommand {Message = "test"} |> whiteQuery |> checkOkResult
     match blackInfo.GetNotify() with
     | ChatNotify {Message = msg} :: _ -> msg |> equals "test"
     | _ -> failTest "No chat notify"
-}
 
 [<Fact>]
-let ``test move command - invalid state``() = async {
+let ``test move command - invalid state``() =
     let query, _ = getChannelSimple()
     
-    let makeInvalidMove() = async {
+    let makeInvalidMove() = 
         let move = Unchecked.defaultof<MoveCommand>
-        let! result = query (MoveCommand move)
+        let result = query (MoveCommand move)
         match result with
         | ErrorResponse (InvalidStateErrorResponse msg) -> msg |> should haveSubstring "Not matched"
         | _ -> failTest "invalid result"
-    }
 
-    do! makeInvalidMove()
-    do! MatchCommand defaultMatcherOptions |> query |> checkOkResult
-    do! makeInvalidMove()
-}
+    makeInvalidMove()
+    MatchCommand defaultMatcherOptions |> query |> checkOkResult
+    makeInvalidMove()
 
 
 [<Fact>]
-let ``test move command - invalid move``() = async {
+let ``test move command - invalid move``() =
     let matcher = createMatcher()
     let query1, _ = getChannel matcher
     let query2, _ = getChannel matcher
 
-    let makeInvalidMove query error = async {
+    let makeInvalidMove query error = 
         let move = {Src = 0uy; Dst = 0uy; PawnPromotion = None}
-        let! result = query (MoveCommand move)
+        let result = query (MoveCommand move)
         match result with
         | ErrorResponse (MoveErrorResponse e) -> e |> equals error
         | _ -> failTest "invalid result"
-    }
 
-    do! matchConnections query1 query2
-    do! makeInvalidMove query1 InvalidMove
-    do! makeInvalidMove query2 NotYourTurn
-}
+    matchConnections query1 query2
+    makeInvalidMove query1 InvalidMove
+    makeInvalidMove query2 NotYourTurn
 
 [<Fact>]
-let ``test move command - correctness``() = async {
+let ``test move command - correctness``() = 
     let matcher = createMatcher()
     let whiteQuery, whiteInfo = getChannel matcher
     let blackQuery, blackInfo = getChannel matcher
 
-    let makeValidMove query src dst oppentNotify = async {
+    let makeValidMove query src dst oppentNotify =
         let move = {Src = positionFromString src; Dst = positionFromString dst; PawnPromotion = None}
-        let! result = query (MoveCommand move)
+        let result = query (MoveCommand move)
         match result with
         | OkResponse -> ()
         | _ -> failTest "invalid result"
@@ -166,43 +155,39 @@ let ``test move command - correctness``() = async {
         | MoveNotify {Primary = {Src = src; Dst = dst}} :: _ 
             when src = move.Src && dst = move.Dst -> ()
         | x -> failTest "invalid notify"
-    }
 
-    do! matchConnections whiteQuery blackQuery
-    do! makeValidMove whiteQuery "a2" "a4" blackInfo.GetNotify
-    do! makeValidMove blackQuery "a7" "a6" whiteInfo.GetNotify
-}
+    matchConnections whiteQuery blackQuery
+    makeValidMove whiteQuery "a2" "a4" blackInfo.GetNotify
+    makeValidMove blackQuery "a7" "a6" whiteInfo.GetNotify
 
 [<Fact>]
-let ``test disconnect command - new state - doing nothing``() = async {
+let ``test disconnect command - new state - doing nothing``() =
     let whiteQuery, _ = getChannelSimple()
-    do! whiteQuery DisconnectCommand |> checkOkResult
-}
+    whiteQuery DisconnectCommand |> checkOkResult
 
 [<Fact>]
-let ``test disconnect command - matching state - stop matching``() = async {
+let ``test disconnect command - matching state - stop matching``() =
     let matcher = createMatcher()
     let whiteQuery, whiteInfo = getChannel matcher
-    do! MatchCommand defaultMatcherOptions |> whiteQuery |> checkOkResult
-    do! whiteQuery DisconnectCommand |> checkOkResult
+    MatchCommand defaultMatcherOptions |> whiteQuery |> checkOkResult
+    whiteQuery DisconnectCommand |> checkOkResult
     match matcher.StopMatch whiteInfo.Channel with
     | Error ChannelNotFound -> () // already stopped
     | _ -> failTest "matching should be stopped"
-}
 
 [<Fact>]
-let ``test disconnect command - active session - stop session``() = async {
+let ``test disconnect command - active session - stop session``() =
     let matcher = createMatcher()
     let whiteQuery, whiteInfo = getChannel matcher
     let blackQuery, blackInfo = getChannel matcher
-    do! matchConnections whiteQuery blackQuery
+    matchConnections whiteQuery blackQuery
 
     let session = 
         match blackInfo.Channel.GetState() with
         | Matched session -> session
         | x -> failTest "invalid state"
 
-    do! whiteQuery DisconnectCommand |> checkOkResult
+    whiteQuery DisconnectCommand |> checkOkResult
 
     let checkState = function
     | New -> ()
@@ -211,4 +196,3 @@ let ``test disconnect command - active session - stop session``() = async {
     checkState <| blackInfo.Channel.GetState()
 
     (fun () -> session.ChatMessage "") |> should throw typeof<SessionException>
-}

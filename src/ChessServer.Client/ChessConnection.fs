@@ -6,7 +6,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
-open Types.Command
 open Types.Domain
 
 type NotificationHandler = {
@@ -20,7 +19,7 @@ type NotificationHandler = {
 type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler) =
     let cts = new CancellationTokenSource()
     let socket = new ClientWebSocket()
-    let write msg = Socket.write socket msg cts.Token
+    let write msg = Socket.write socket msg
     let generateMessageId() = Guid.NewGuid().ToString()
     let checkMessageId msgId response = msgId = response.MessageId
     let inputResponses = Event<ResponseDto>()
@@ -32,7 +31,6 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         match serverMessage with
         | Response r -> inputResponses.Trigger r
         | Notification n -> inputNotifies.Trigger n
-        async.Return ()
         
     let getResponse ct request = task {
         let combinedCt = CancellationTokenSource.CreateLinkedTokenSource(ct, cts.Token).Token
@@ -58,11 +56,10 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
     interface IDisposable with
         member this.Dispose() = this.Close().Wait()
         
-    member this.Connect() = socket.ConnectAsync(url, CancellationToken.None)
-        
-    member this.Start() =
-        readerTask <- Socket.startReader socket readMsg errorHandler disconnectHandler CancellationToken.None |> Async.StartAsTask
-        readerTask
+    member this.Connect() = task {
+        do! socket.ConnectAsync(url, CancellationToken.None)
+        readerTask <- Socket.startReader socket readMsg errorHandler disconnectHandler |> Async.StartAsTask
+    }
         
     member this.Ping msg ct = task {
         let! response = PingCommand {Message = msg} |> getResponse ct
@@ -103,11 +100,7 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
         do! this.Disconnect(CancellationToken.None)
         cts.Cancel()
         notificationObserver.Dispose()
-        let qeqqa = 51
-        do! socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnected", CancellationToken.None)
+        do! Socket.close socket WebSocketCloseStatus.NormalClosure "client disconnected"
         //wait for exit
-        //do! readerTask
-        //do! Task.Delay 20000
         do! readerTask
     }
-        //socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnected", CancellationToken.None).Wait()

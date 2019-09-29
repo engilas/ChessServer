@@ -14,12 +14,14 @@ open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
 open ChessConnection
 
-let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) ct game  = task {
+let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) ct (i, game)  = task {
+    let eqwaes  = i
     let stateContainer = createStateHistoryContainer()
     
     let handler = {
         notificationHandlerStub with 
             SessionStartNotification = notificatorEmptyFunc
+            SessionCloseNotification = notificatorEmptyFunc
             EndGameNotification = notificatorEmptyFunc
             MoveNotification = stateContainer.PushState
     }
@@ -46,9 +48,11 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         let! notify = moveTask
 
         notify |> should equal pgnMove
+        
+        //do! Async.Sleep 1000
     }
 
-    for row in game |> Seq.take 1 do
+    for row in game do
         do! processMove whiteConn row.WhiteMove
         match row.BlackMove with
         | Some move -> 
@@ -56,10 +60,26 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         | None -> ()
 
     do! whiteConn.Close()
-    
-    do! Async.Sleep 1500000
-    
     do! blackConn.Close()
+}
+
+let rec taskThrottle f tasks count = async {
+    match tasks with
+    | _ :: _ ->
+        let taskCount = tasks |> List.length
+        let takeCount = min count taskCount
+        let taken = tasks |> List.take takeCount
+        let left = tasks |> List.skip takeCount
+        try 
+            let! _ =
+                taken |> List.map (f >> Async.AwaitTask)
+                |> Async.Parallel
+            ()
+        with e ->
+            //reraise()
+            ()
+        return! taskThrottle f left count
+    | _ -> ()
 }
 
 //[<Fact(Skip="eq")>]
@@ -68,26 +88,40 @@ let ``process pgn files on session and check correctness`` () = task {
     let url = Uri(sprintf "ws://localhost:%d/ws" 1313) 
     let cts = new CancellationTokenSource()
     
+    let errorAction e = 
+        cts.Cancel()
+    
     let createConnection notificationHandler = task {
-        let conn = new ServerConnection(url, (fun _ -> cts.Cancel(); async.Return ()), (fun () -> async.Return ()), notificationHandler)
+        let conn = new ServerConnection(url, errorAction, (fun () -> ()), notificationHandler)
         do! conn.Connect()
-        conn.Start() |> ignore
         return conn
     }
 
 
-    let cts = new CancellationTokenSource()
-    //let createConnection = createServer cts
+//    let createConnection = createServer cts
 
-    let moves = getPgnMoves 1 |> Seq.toList
-    //let tasks = 
-    //moves 
-    //|> List.map (processGame createConnection cts.Token)
-    //|> Task.WhenAll
-    //|> ignore
+//    let rec tasksLoop games = seq {
+//        match games with
+//        | game :: games ->
+//            
+//    }
+    let games = getPgnMoves 100 |> Seq.toList |> List.mapi (fun i x -> i, x)
+    do! taskThrottle (fun (x,i) -> processGame createConnection cts.Token (x, i)) games 8
+//    Parallel.ForEach(games, (fun game ->
+//        (processGame createConnection cts.Token game).Wait() 
+//    )) |> ignore
+
+//    let games = getPgnMoves 100 |> Seq.toList
+//    let! y =
+//        games 
+//        |> List.map (processGame createConnection cts.Token >> Async.AwaitTask)
+//        |> Async.Parallel
+    
     //let! _ = Task.WhenAll(tasks)
-    for move in moves do
-        do! processGame createConnection cts.Token move
+    
+//    for game in games do
+//        do! processGame createConnection cts.Token game
 
-    ()
+    if cts.IsCancellationRequested then
+        failTest "something goes wrong - cts cancelled"
 }

@@ -1,4 +1,4 @@
-﻿module Socket
+﻿module ServerSocketX
 
 open System.Net.WebSockets
 open System.Text

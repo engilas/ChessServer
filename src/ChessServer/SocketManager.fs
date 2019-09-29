@@ -3,7 +3,6 @@
 open System
 open System.Net.WebSockets
 open System.Threading
-open System.Text
 open Microsoft.Extensions.Logging
 open Types.Command
 open Types.Channel
@@ -28,12 +27,12 @@ module private Internal =
 
     let matcher = createMatcher()
     
-let processConnection (socket: WebSocket) connectionId = async {
+let processConnection (socket: WebSocket) connectionId =
 
     use writeAgent = MailboxProcessor.Start(fun inbox ->
         let rec messageLoop() = async {
             let! msg = inbox.Receive()
-            do! Socket.write socket msg 
+            do! Socket.write socket msg |> Async.AwaitTask
             return! messageLoop()  
         }
         messageLoop()
@@ -41,6 +40,7 @@ let processConnection (socket: WebSocket) connectionId = async {
 
     let writeSocket (msg: string) = 
         logger.LogInformation("Write message {s}", msg)
+        printfn "%s" msg
         writeAgent.Post msg
 
     let ctsNotificator = new CancellationTokenSource()
@@ -51,61 +51,38 @@ let processConnection (socket: WebSocket) connectionId = async {
 
     let pushNotify = pushMessage Serializer.serializeNotify
     let pushResponse id = pushMessage (Serializer.serializeResponse id)
-
-    //startNotificator pushNotify ctsNotificator.Token 
-    //|> Async.Start
-
+//
+//    //startNotificator pushNotify ctsNotificator.Token 
+//    //|> Async.Start
+//
     let stateContainer = createStateContainer New
-
+    
     let channel = {
         Id = connectionId
         PushNotification = pushNotify
         ChangeState =
-            fun newState -> 
+            fun newState ->
                 logger.LogInformation("Channel {0} changing state to {1}", connectionId, newState)
                 stateContainer.SetState newState
         GetState = stateContainer.GetState
     }
-        
-    let processCommand = createCommandProcessor channel matcher
     
-    let processSocketMsg msg = async {
+    let processCommand = processCommand matcher channel
+    
+    let processSocketMsg msg =
         printfn "%s" msg // todo replace to logger
         let {MessageId = id; Request = request} = Serializer.deserializeClientMessage msg
-        let! response = processCommand request
+        let response = processCommand request
         pushResponse id response
-    }
     
-    let errorAction (e: exn) = async {
+    let errorAction (e: exn) = 
         logger.LogError(e, "Error in read loop")
         pushResponse String.Empty (ErrorResponse InternalErrorResponse)
-    }
-
-    let closeConnection() = async {
-        do! processCommand DisconnectCommand |> Async.Ignore
+        
+    let closeConnection() =
+        processCommand DisconnectCommand |> ignore
         ctsNotificator.Cancel()
-    }
     
-    do! Socket.startReader connection processSocketMsg errorAction closeConnection CancellationToken.None
-
-//    let rec readLoop() = async {
-//        let! result = readSocket()
-//        match result.CloseStatus.HasValue with
-//        | false -> 
-//            try
-//                let msg = Encoding.UTF8.GetString(buffer, 0, result.Count)
-//                printfn "%s" msg // todo replace to logger
-//                let id, command = JsonSerializer.deserializeRequest msg
-//                let! response = processCommand command
-//                pushResponse id response
-//            with e ->
-//                logger.LogError(e, "Error in read loop")
-//                pushResponse -1 (ErrorResponse InternalErrorResponse)
-//            return! readLoop()
-//        | true -> 
-//            do! closeConnection result.CloseStatus.Value result.CloseStatusDescription
-//    }
-//    do! readLoop()
-}
+    Socket.startReader socket processSocketMsg errorAction closeConnection
 
 

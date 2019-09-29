@@ -79,3 +79,6 @@ type ResponseDto = {
 type ServerMessage = 
 | Response of ResponseDto
 | Notification of Notify
+
+let createResponse r = Response r
+let createNotification n = Notification n

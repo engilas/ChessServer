@@ -13,6 +13,7 @@
         <e p="bin" t="ExcludeRecursive" />
         <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.fsproj" t="IncludeRecursive" />
+        <e p="ClientChannelAdapter.fs" t="Include" />
         <e p="CommandProcessor.fs" t="Include" />
         <e p="EngineMappers.fs" t="Include" />
         <e p="Infrastructure" t="Include">
@@ -81,6 +82,7 @@
         <e p="Helper.fs" t="Include" />
         <e p="obj" t="ExcludeRecursive" />
         <e p="Serializer.fs" t="Include" />
+        <e p="ServerSocket.fs" t="Include" />
         <e p="Socket.fs" t="Include" />
       </e>
       <e p="ConsoleApp2.sln" t="IncludeFlat" />

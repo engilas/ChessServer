@@ -73,8 +73,8 @@ let channelInfo () =
 
 let getMove src dst = {moveStub with Src = positionFromString src; Dst = positionFromString dst}
 
-let notificatorErrorFunc _ = 
-    failwith "invalid notification"
+let notificatorErrorFunc x = 
+    failwithf "invalid notification %A" x
     
 let notificatorEmptyFunc _ = ()
 
