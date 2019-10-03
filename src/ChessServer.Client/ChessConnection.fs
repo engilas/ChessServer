@@ -16,7 +16,22 @@ type NotificationHandler = {
     SessionCloseNotification: SessionCloseReason -> unit
 }
 
-type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler) =
+let notificationHandlerAdapter
+    (chatNotification: Action<string>)
+    (moveNotification: Action<MoveDescription>)
+    (endGameNotification: Action<EndGameNotify>)
+    (sessionStartNotification: Action<SessionStartNotify>)
+    (sessionCloseNotification: Action<SessionCloseReason>)
+    =
+    {
+        ChatNotification = chatNotification.Invoke
+        MoveNotification = moveNotification.Invoke
+        EndGameNotification = endGameNotification.Invoke
+        SessionStartNotification = sessionStartNotification.Invoke
+        SessionCloseNotification = sessionCloseNotification.Invoke
+    }
+
+type ServerConnection (url, errorHandlerAction: Action<exn>, disconnectHandlerAction: Action, notificationHandler) =
     let cts = new CancellationTokenSource()
     let socket = new ClientWebSocket()
     let write msg = Socket.write socket msg
@@ -25,6 +40,8 @@ type ServerConnection (url, errorHandler, disconnectHandler, notificationHandler
     let inputResponses = Event<ResponseDto>()
     let inputNotifies = Event<Notify>()
     let mutable readerTask : Task = null
+    let errorHandler = errorHandlerAction.Invoke
+    let disconnectHandler = disconnectHandlerAction.Invoke
     
     let readMsg msg =
         let serverMessage = Serializer.deserializeServerMessage msg

@@ -28,9 +28,10 @@ let createServer (cts: CancellationTokenSource) =
     let builder = (App.createWebHostBuilder [||]).UseUrls(sprintf "http://*:%d" port)
     let _ = builder.Build().RunAsync()
     let url = Uri(sprintf "ws://localhost:%d/ws" port)
-    
-    let errorAction e =
+
+    let errorAction = Action<exn>(fun e -> 
         cts.Cancel()
+    )
 
     fun notificationHandler -> task {
         let conn = new ServerConnection(url, errorAction, (fun () -> ()), notificationHandler)

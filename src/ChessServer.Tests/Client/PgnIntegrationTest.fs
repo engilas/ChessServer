@@ -88,8 +88,9 @@ let ``process pgn files on session and check correctness`` () = task {
     let url = Uri(sprintf "ws://localhost:%d/ws" 1313) 
     let cts = new CancellationTokenSource()
     
-    let errorAction e = 
+    let errorAction = Action<exn>(fun e ->
         cts.Cancel()
+    )
     
     let createConnection notificationHandler = task {
         let conn = new ServerConnection(url, errorAction, (fun () -> ()), notificationHandler)
