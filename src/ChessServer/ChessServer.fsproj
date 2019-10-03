@@ -1,14 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Anemonis.JsonRpc" Version="1.23.0" />
     <PackageReference Include="FSharp.Data" Version="3.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Giraffe" Version="3.6.0" />
     <PackageReference Include="TaskBuilder.fs" Version="2.1.*" />
   </ItemGroup>
@@ -28,6 +27,7 @@
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="SocketManager.fs" />
     <Compile Include="WebSocketMiddleware.fs" />
+    <Compile Include="Hubs.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
