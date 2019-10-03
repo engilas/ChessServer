@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.705
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29324.140
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer", "ChessServer\ChessServer.fsproj", "{02D7F8B0-D307-43FE-8784-9273C94AE0AE}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Tests", "ChessServer.Tests\ChessServer.Tests.fsproj", "{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Tests", "ChessServer.Tests\ChessServer.Tests.fsproj", "{A8FE0B3C-42DE-4C91-991B-095DFA74E8C7}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Client", "ChessServer.Client\ChessServer.Client.fsproj", "{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Client", "ChessServer.Client\ChessServer.Client.fsproj", "{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ChessServer.Types", "ChessServer.Types\ChessServer.Types.fsproj", "{3A691C47-2000-4528-BCE3-FD22DF286445}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Types", "ChessServer.Types\ChessServer.Types.fsproj", "{3A691C47-2000-4528-BCE3-FD22DF286445}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

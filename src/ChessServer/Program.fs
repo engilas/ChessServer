@@ -10,6 +10,7 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open Microsoft.Extensions.Configuration
+open Hubs
 
 // ---------------------------------
 // Models
@@ -94,13 +95,19 @@ let configureApp (app : IApplicationBuilder) =
         //.UseHttpsRedirection()
         .UseCors(configureCors config)
         .UseWebSockets()
-        .UseMiddleware<Middleware.WebSocketMiddleware>()
+        //.UseMiddleware<Middleware.WebSocketMiddleware>()
         .UseStaticFiles()
+        .UseRouting()
+        .UseEndpoints(fun endpoints ->
+            endpoints.MapHub<CommandProcessorHub>("/command") |> ignore
+        )
         .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
     services.AddCors() 
-            .AddGiraffe() |> ignore
+            .AddGiraffe()
+            .AddSignalR() 
+            |> ignore
 
 let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder) =
     builder.AddConfiguration(context.Configuration.GetSection("Logging"))

@@ -1,0 +1,14 @@
+<script src="signalr.js"></script>
+
+<script>
+
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("http://localhost:4000/command")
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
+
+connection.start().then(function () {
+    console.log("connected");
+});
+
+</script>
