@@ -15,7 +15,6 @@ type MoveCommand = {
 type PingResponse = Message
 type MatchResponse = Message
 
-type TestNotify = Message
 type ChatNotify = Message
 type SessionStartNotify = {
     Color: Color
@@ -65,20 +64,3 @@ type Notify =
 | EndGameNotify of EndGameNotify
 | SessionStartNotify of SessionStartNotify
 | SessionCloseNotify of SessionCloseReason
-
-type ClientMessage = {
-    MessageId: string
-    Request: Request
-}
-
-type ResponseDto = {
-    MessageId: string
-    Response: Response
-}
-
-type ServerMessage = 
-| Response of ResponseDto
-| Notification of Notify
-
-let createResponse r = Response r
-let createNotification n = Notification n

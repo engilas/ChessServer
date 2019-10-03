@@ -27,6 +27,7 @@
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="SocketManager.fs" />
     <Compile Include="WebSocketMiddleware.fs" />
+    <Compile Include="HubContextAccessor.fs" />
     <Compile Include="Hubs.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

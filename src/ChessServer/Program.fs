@@ -11,6 +11,7 @@ open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open Microsoft.Extensions.Configuration
 open Hubs
+open HubContextAccessor
 
 // ---------------------------------
 // Models
@@ -106,7 +107,8 @@ let configureApp (app : IApplicationBuilder) =
 let configureServices (services : IServiceCollection) =
     services.AddCors() 
             .AddGiraffe()
-            .AddSignalR() 
+            .AddSingleton<HubContextAccessor>()
+            .AddSignalR(fun x -> x.EnableDetailedErrors <- Nullable true)
             |> ignore
 
 let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder) =
@@ -119,7 +121,7 @@ let configureAppConfiguration (args: string []) (context: WebHostBuilderContext)
     config
         .AddJsonFile("appsettings.json", false, true)
         .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName , true)
-        .AddEnvironmentVariables() 
+        .AddEnvironmentVariables()
         .AddCommandLine(args) |> ignore
 
 let createWebHostBuilder args =

@@ -16,6 +16,8 @@
         <e p="ClientChannelAdapter.fs" t="Include" />
         <e p="CommandProcessor.fs" t="Include" />
         <e p="EngineMappers.fs" t="Include" />
+        <e p="HubContextAccessor.fs" t="Include" />
+        <e p="Hubs.fs" t="Include" />
         <e p="Infrastructure" t="Include">
           <e p="IocManager.fs" t="Include" />
           <e p="Logging.fs" t="Include" />
@@ -36,6 +38,8 @@
         <e p="Types.fs" t="Include" />
         <e p="WebRoot" t="Include">
           <e p="main.css" t="Include" />
+          <e p="signalr.js" t="Include" />
+          <e p="test.html" t="Include" />
         </e>
         <e p="WebSocketMiddleware.fs" t="Include" />
       </e>

@@ -5,10 +5,31 @@
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("http://localhost:4000/command")
     .configureLogging(signalR.LogLevel.Information)
+    .withAutomaticReconnect()
     .build();
+
+connection.on("notification", notif =>{
+   console.log(notif); 
+});
 
 connection.start().then(function () {
     console.log("connected");
+}).catch(function (err) {
+    return console.error(err.toString());
 });
+
+async function match() {
+    let result = await connection.invoke("match", null);
+    console.log(result);
+}
+
+async function test() {
+    let result = await connection.invoke("testResult", "jsq");
+    console.log(result);
+}
+
+function invoke(method) {
+    connection.invoke(method, arguments);
+}
 
 </script>
