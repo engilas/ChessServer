@@ -1,4 +1,16 @@
 ﻿module ChessConnection
+
+open Microsoft.AspNetCore.SignalR.Client
+open System.Threading.Tasks
+open Microsoft.Extensions.Logging
+
+type ServerConnection (url, notificationHandler) =
+    let connection =
+        (new HubConnectionBuilder())
+            .WithUrl("http://localhost:53353/ChatHub")
+            .WithAutomaticReconnect()
+            .ConfigureLogging(fun c -> c.SetMinimumLevel(LogLevel.Information) |> ignore)
+            .Build()
 //
 //open System.Net.WebSockets
 //open Types.Command

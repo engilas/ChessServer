@@ -2,7 +2,6 @@
 
 open System
 open Microsoft.AspNetCore.SignalR
-open Microsoft.Extensions.DependencyInjection
 open System.Threading.Tasks
 open Types.Channel
 open Types.Command
@@ -51,9 +50,22 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
         |> ignore
 
     member private this.GetChannel() = channels.TryGetValue this.Context.ConnectionId |> snd
+
+    member private this.ProcessCommand request = 
+         let channel = this.GetChannel()
+         processCommand channel request |> Serializer.serializeResponse
+
     
     member this.Match(group: string) =
-        let channel = this.GetChannel()
         let group = if System.String.IsNullOrWhiteSpace(group) then None else Some group
-        let request = MatchCommand {Group = group}
-        processCommand channel request |> Serializer.serializeResponse
+        this.ProcessCommand <| MatchCommand {Group = group}
+
+    member this.Chat message =
+        this.ProcessCommand <| ChatCommand {Message = message}
+
+    member this.Move moveCommand = 
+        let move = Serializer.deserializeMoveCommand moveCommand
+        this.ProcessCommand <| MoveCommand move
+
+    member this.Disconnect() =
+        this.ProcessCommand DisconnectCommand
