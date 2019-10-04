@@ -10,10 +10,16 @@ open StateContainer
 open CommandProcessor
 open HubContextAccessor
 open System.Collections.Concurrent
+open FSharp.Control.Tasks.V2
 
 let private matcher = MatchManager.createMatcher()
 let processCommand = processCommand matcher
 let private channels = ConcurrentDictionary<string, ClientChannel>()
+
+let serializeResponse (x: Task<_>) = task {
+    let! response = x
+    return Serializer.serializeResponse response
+}
 
 type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubContextAccessor) = 
     inherit Hub()
@@ -54,11 +60,13 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
     member private this.ProcessCommand request = 
          let channel = this.GetChannel()
          processCommand channel request |> Serializer.serializeResponse
-
     
-    member this.Match(group: string) =
-        let group = if System.String.IsNullOrWhiteSpace(group) then None else Some group
-        this.ProcessCommand <| MatchCommand {Group = group}
+    member this.Ping msg =
+        this.ProcessCommand <| PingCommand {Message = msg}
+         
+    member this.Match optionsRaw =
+        let options = Serializer.deserializeMatchOptions optionsRaw
+        this.ProcessCommand <| MatchCommand options
 
     member this.Chat message =
         this.ProcessCommand <| ChatCommand {Message = message}

@@ -12,7 +12,7 @@ type MoveCommand = {
     PawnPromotion: PieceType option
 }
 
-type PingResponse = Message
+type PingResult = Message
 type MatchResponse = Message
 
 type ChatNotify = Message
@@ -51,7 +51,7 @@ type Request =
 | DisconnectCommand
 
 type Response =
-| PingResponse of PingResponse
+| PingResponse of PingResult
 | ErrorResponse of ServerError
 | OkResponse
 

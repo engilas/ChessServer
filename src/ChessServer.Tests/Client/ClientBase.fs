@@ -23,18 +23,14 @@ let portResourceAgent = MailboxProcessor<PortResourceMessage>.Start(fun inbox ->
     loop 2000
 )
 
-//let createServer (cts: CancellationTokenSource) = 
-//    let port = portResourceAgent.PostAndReply id
-//    let builder = (App.createWebHostBuilder [||]).UseUrls(sprintf "http://*:%d" port)
-//    let _ = builder.Build().RunAsync()
-//    let url = Uri(sprintf "ws://localhost:%d/ws" port)
-//
-//    let errorAction = Action<exn>(fun e -> 
-//        cts.Cancel()
-//    )
-//
-//    fun notificationHandler -> task {
-//        let conn = new ServerConnection(url, errorAction, (fun () -> ()), notificationHandler)
-//        do! conn.Connect()
-//        return conn
-//    }
+let createServer() = 
+    let port = portResourceAgent.PostAndReply id
+    let builder = (App.createWebHostBuilder [||]).UseUrls(sprintf "http://*:%d" port)
+    let _ = builder.Build().RunAsync()
+    let url = sprintf "http://localhost:%d/command" port
+
+    fun notificationHandler -> task {
+        let conn = new ServerConnection(url, notificationHandler)
+        do! conn.Connect()
+        return conn
+    }

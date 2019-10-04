@@ -78,12 +78,12 @@ let notificatorErrorFunc x =
     
 let notificatorEmptyFunc _ = ()
 
-//let notificationHandlerStub = {
-//    ChatNotification = notificatorErrorFunc
-//    MoveNotification = notificatorErrorFunc
-//    EndGameNotification = notificatorErrorFunc
-//    SessionStartNotification = notificatorErrorFunc
-//    SessionCloseNotification = notificatorErrorFunc
-//}
+let notificationHandlerStub = {
+    ChatNotification = notificatorErrorFunc
+    MoveNotification = notificatorErrorFunc
+    EndGameNotification = notificatorErrorFunc
+    SessionStartNotification = notificatorErrorFunc
+    SessionCloseNotification = notificatorErrorFunc
+}
 
 let defaultMatcherOptions = { Group = None }
