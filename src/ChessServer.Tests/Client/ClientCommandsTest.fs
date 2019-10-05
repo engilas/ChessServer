@@ -4,21 +4,12 @@ open ChessConnection
 open Xunit
 open ClientBase
 open Types.Command
-open System.Threading
 open FSharp.Control.Tasks.V2
 open SessionBase
 open StateContainer
 open Types.Domain
-open Types.Command
 open FsUnit.Xunit
 open System.Threading.Tasks
-
-let checkOkResult x = task {
-    let! result = x
-    match result with
-    | OkResponse -> ()
-    | x -> failwith "invalid response %A" x
-}
 
 [<Fact>]
 let ``test ping command``() = task {

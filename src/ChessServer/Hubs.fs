@@ -40,15 +40,21 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
             logger.LogError("Channel {0} error: can't add channel", connectionId)
             Task.CompletedTask
         else 
-            logger.LogInformation("Channel {0} connected", connectionId)
+            logger.LogInformation("Channel {0} connected. Active connections: {x}", connectionId, channels.Count)
             base.OnConnectedAsync()
 
     override this.OnDisconnectedAsync(exn) =
-        let connectionId = this.Context.ConnectionId
-        logger.LogInformation("Channel {0} disconnected", connectionId)
-        let (_, channel) = channels.TryRemove connectionId
-        processCommand channel DisconnectCommand |> ignore
-        base.OnDisconnectedAsync(exn)
+        let t = task {
+            let connectionId = this.Context.ConnectionId
+            logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)
+            let! _ = this.Disconnect()
+            let _ = channels.TryRemove connectionId
+            ()
+            //do! base.OnDisconnectedAsync(exn)
+        }
+        Task.WhenAll(t :> Task, base.OnDisconnectedAsync(exn))
+        //Task.CompletedTask
+        //(t :> Task).ContinueWith(fun _ -> base.OnDisconnectedAsync(exn))
         
     member private this.SendNotify(id, notif) =
         let client = context.GetContext<CommandProcessorHub>().Clients.Client(id)
@@ -60,13 +66,19 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
     member private this.ProcessCommand request = 
          let channel = this.GetChannel()
          processCommand channel request |> Serializer.serializeResponse
+         
+    member private this.ProcessAsyncCommand request = task {
+         let channel = this.GetChannel()
+         let! response = processAsyncCommand matcher channel request
+         return Serializer.serializeResponse response
+    }
     
     member this.Ping msg =
         this.ProcessCommand <| PingCommand {Message = msg}
          
     member this.Match optionsRaw =
         let options = Serializer.deserializeMatchOptions optionsRaw
-        this.ProcessCommand <| MatchCommand options
+        this.ProcessAsyncCommand <| MatchCommand options
 
     member this.Chat message =
         this.ProcessCommand <| ChatCommand {Message = message}
@@ -76,4 +88,4 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
         this.ProcessCommand <| MoveCommand move
 
     member this.Disconnect() =
-        this.ProcessCommand DisconnectCommand
+        this.ProcessAsyncCommand DisconnectCommand

@@ -4,8 +4,9 @@ open System.Threading
 open FSharp.Control.Tasks.V2
 open ChessServer
 open Microsoft.AspNetCore.Hosting
-open System
+open System.Threading.Tasks
 open ChessConnection
+open Types.Command
 
 type PortResourceMessage = AsyncReplyChannel<int>
 
@@ -34,3 +35,10 @@ let createServer() =
         do! conn.Connect()
         return conn
     }
+    
+let checkOkResult (x: Task<_>) = task {
+    let! result = x
+    match result with
+    | OkResponse -> ()
+    | x -> failwithf "invalid response %A" x
+}

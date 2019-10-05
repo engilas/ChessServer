@@ -17,8 +17,8 @@ type MatcherResult =
     | RemoveResult of Result<RemoveResult, RemoveError>
 
 type Matcher = {
-    StartMatch: ClientChannel -> MatchOptions -> Result<AddResult, AddError>
-    StopMatch: ClientChannel -> Result<RemoveResult, RemoveError>
+    StartMatch: ClientChannel -> MatchOptions -> Async<Result<AddResult, AddError>>
+    StopMatch: ClientChannel -> Async<Result<RemoveResult, RemoveError>>
 }
 
 [<AutoOpen>]
@@ -92,16 +92,18 @@ let createMatcher() =
     let agent = createAgent()
     {
         StartMatch = 
-            fun channel options ->
+            fun channel options -> async {
                 let groupName = options.Group |> Option.defaultValue "general"
-                let result = agent.PostAndReply(fun x -> Add (groupName, channel), x)
+                let! result = agent.PostAndAsyncReply(fun x -> Add (groupName, channel), x)
                 match result with
-                | AddResult x -> x
-                | _ -> failwith "invalid agent response"
+                | AddResult x -> return x
+                | _ -> return failwith "invalid agent response"
+            }
         StopMatch = 
-            fun channel -> 
-                let result = agent.PostAndReply(fun x -> Remove channel, x)
+            fun channel -> async {
+                let! result = agent.PostAndAsyncReply(fun x -> Remove channel, x)
                 match result with
-                | RemoveResult x -> x
-                | _ -> failwith "invalid agent response"
+                | RemoveResult x -> return x
+                | _ -> return failwith "invalid agent response"
+            }
     }
