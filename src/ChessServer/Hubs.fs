@@ -44,17 +44,11 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
             base.OnConnectedAsync()
 
     override this.OnDisconnectedAsync(exn) =
-        let t = task {
-            let connectionId = this.Context.ConnectionId
-            logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)
-            let! _ = this.Disconnect()
-            let _ = channels.TryRemove connectionId
-            ()
-            //do! base.OnDisconnectedAsync(exn)
-        }
-        Task.WhenAll(t :> Task, base.OnDisconnectedAsync(exn))
-        //Task.CompletedTask
-        //(t :> Task).ContinueWith(fun _ -> base.OnDisconnectedAsync(exn))
+        let connectionId = this.Context.ConnectionId
+        this.Disconnect() |> ignore
+        let _ = channels.TryRemove connectionId
+        logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)
+        base.OnDisconnectedAsync(exn)
         
     member private this.SendNotify(id, notif) =
         let client = context.GetContext<CommandProcessorHub>().Clients.Client(id)
@@ -65,20 +59,15 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
 
     member private this.ProcessCommand request = 
          let channel = this.GetChannel()
+         //logger.LogInformation(sprintf "Processing command %A" request)
          processCommand channel request |> Serializer.serializeResponse
-         
-    member private this.ProcessAsyncCommand request = task {
-         let channel = this.GetChannel()
-         let! response = processAsyncCommand matcher channel request
-         return Serializer.serializeResponse response
-    }
     
     member this.Ping msg =
         this.ProcessCommand <| PingCommand {Message = msg}
          
     member this.Match optionsRaw =
         let options = Serializer.deserializeMatchOptions optionsRaw
-        this.ProcessAsyncCommand <| MatchCommand options
+        this.ProcessCommand <| MatchCommand options
 
     member this.Chat message =
         this.ProcessCommand <| ChatCommand {Message = message}
@@ -88,4 +77,4 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
         this.ProcessCommand <| MoveCommand move
 
     member this.Disconnect() =
-        this.ProcessAsyncCommand DisconnectCommand
+        this.ProcessCommand DisconnectCommand

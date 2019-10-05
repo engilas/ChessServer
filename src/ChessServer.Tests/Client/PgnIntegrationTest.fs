@@ -16,10 +16,11 @@ open ChessConnection
 
 let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, game)  = task {
     let stateContainer = createStateHistoryContainer()
+    let matchEvent = new Event<_>()
     
     let handler = {
         notificationHandlerStub with 
-            SessionStartNotification = notificatorEmptyFunc
+            SessionStartNotification = fun _ -> matchEvent.Trigger()
             SessionCloseNotification = notificatorEmptyFunc
             EndGameNotification = notificatorEmptyFunc
             MoveNotification = stateContainer.PushState
@@ -60,35 +61,40 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
     do! blackConn.Close()
 }
 
-let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) = task {
+let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) (cts: CancellationTokenSource) = task {
     use sem = new SemaphoreSlim(maxDegree)
     let waitList =
         tasks
         |> List.map(fun x -> task {
             do! sem.WaitAsync()
-            task {
-                try do! f x
-                finally sem.Release() |> ignore
-            } |> ignore
+            return task {
+                try
+                    try
+                        do! f x
+                    with e ->
+                        cts.Cancel()
+                finally
+                    sem.Release() |> ignore
+            }
         })
     let! _ = Task.WhenAll waitList
     ()
 }
 
-//[<Fact(Skip="eq")>]
-[<Fact>]
+[<Fact(Skip="eq")>]
+//[<Fact>]
 let ``process pgn files on session and check correctness`` () = task {
     let url = sprintf "http://localhost:%d/command" 1313
     
-    let createConnection notificationHandler = task {
-        let conn = new ServerConnection(url, notificationHandler)
-        do! conn.Connect()
-        return conn
-    }
+//    let createConnection notificationHandler = task {
+//        let conn = new ServerConnection(url, notificationHandler)
+//        do! conn.Connect()
+//        return conn
+//    }
 
-    //let createConnection = createServer()
-
-    let games = getPgnMoves 500 |> Seq.toList |> List.mapi (fun i x -> i, x)
-    do! taskThrottle 16 (fun (x, i) -> processGame createConnection (x, i)) games
-    ()
+    let createConnection = createServer()
+    let games = getPgnMoves 300 |> Seq.toList |> List.mapi (fun i x -> i, x)
+    let cts = new CancellationTokenSource()
+    do! taskThrottle 8 (fun (x, i) -> processGame createConnection (x, i)) games cts
+    if cts.IsCancellationRequested then failTest "Something goes wrong - cts cancelled"
 }

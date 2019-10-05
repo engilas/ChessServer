@@ -61,9 +61,13 @@ type ServerConnection (url: string, notificationHandler) =
             | SessionCloseNotify n -> notificationHandler.SessionCloseNotification n
         )
         
+    let mutable closed = false
+        
     interface IDisposable with
          member this.Dispose() =
              notifListener.Dispose()
+             if not closed then
+                 this.Close().GetAwaiter().GetResult()
              connection.DisposeAsync().GetAwaiter().GetResult()
              
     member this.Connect() = connection.StartAsync()
@@ -109,4 +113,5 @@ type ServerConnection (url: string, notificationHandler) =
      member this.Close() = task {
          do! this.Disconnect() :> Task
          do! connection.StopAsync()
+         closed <- true
      }
