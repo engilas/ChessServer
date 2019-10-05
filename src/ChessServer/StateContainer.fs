@@ -1,8 +1,7 @@
 ﻿module StateContainer
 
-open System.Threading
-open System
 open System.Threading.Tasks
+open FSharp.Control.Tasks.V2
 
 [<AutoOpen>]
 module private Internal =
@@ -15,9 +14,20 @@ module private Internal =
     | GetHistory of AsyncReplyChannel<'a list>
     | Clear of AsyncReplyChannel<unit>
 
-    let waitState (event: Event<_>) matcher =
-        let sub = event.Publish |> Event.filter matcher
-        Async.AwaitEvent sub |> Async.StartAsTask
+    let waitState (event: Event<'a>) getLast matcher =
+        let sub = event.Publish |> Event.filter matcher |> Async.AwaitEvent |> Async.StartAsTask
+        let rec wait() = task {
+            let last : 'a option = getLast()
+            if last.IsNone || not <| matcher last.Value then
+                let delay = Task.Delay 1000
+                let! r = Task.WhenAny(sub, delay)
+                if r = delay then
+                    return! wait()
+                else
+                    return! sub
+            else return last.Value
+        }
+        wait()
 
 type StateContainer<'a> = {
     GetState: unit -> 'a
@@ -47,14 +57,13 @@ let createStateContainer state =
 
     let getState() = agent.PostAndReply GetState
     let event = Event<_>()
-
     {
         GetState = getState
         SetState = 
             fun x -> 
                 agent.PostAndReply (fun ch -> SetState (x, ch))
                 event.Trigger x
-        WaitState = waitState event
+        WaitState = waitState event (getState >> Some)
     }
 
 let createStateHistoryContainer() =
@@ -73,12 +82,13 @@ let createStateHistoryContainer() =
 
     let getHistory() = agent.PostAndReply GetHistory
     let event = Event<_>()
+    
 
     {
         GetHistory = getHistory
         PushState = fun x -> 
             agent.PostAndReply (fun ch -> PushState (x, ch))
             event.Trigger x
-        WaitState = waitState event
+        WaitState = waitState event (getHistory >> List.tryHead)
         Clear = fun () -> agent.PostAndReply Clear
     }

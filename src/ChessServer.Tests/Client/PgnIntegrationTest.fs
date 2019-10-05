@@ -14,13 +14,12 @@ open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
 open ChessConnection
 
-let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, game)  = task {
+let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, game) = task {
     let stateContainer = createStateHistoryContainer()
-    let matchEvent = new Event<_>()
     
     let handler = {
         notificationHandlerStub with 
-            SessionStartNotification = fun _ -> matchEvent.Trigger()
+            SessionStartNotification = notificatorEmptyFunc
             SessionCloseNotification = notificatorEmptyFunc
             EndGameNotification = notificatorEmptyFunc
             MoveNotification = stateContainer.PushState
@@ -28,16 +27,18 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
     
     let matchOptions = { Group = Some <| Guid.NewGuid().ToString() }
 
-    let! whiteConn = createConnection handler
-    let! blackConn = createConnection handler
+    use! whiteConn = createConnection handler
+    use! blackConn = createConnection handler
         
     do! whiteConn.Match matchOptions |> checkOkResult
     do! blackConn.Match matchOptions |> checkOkResult
 
     let processMove (connection: ServerConnection) pgnMove = task {
-        let moveTask = stateContainer.WaitState (fun _ -> true)
-
         let primary = pgnMove.Primary
+        let moveTask = stateContainer.WaitState (fun x ->
+            x.Primary.Src = primary.Src && x.Primary.Dst = primary.Dst
+        )
+
         let move = {
             Src = primary.Src
             Dst = primary.Dst
@@ -45,8 +46,8 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         }
 
         do! connection.Move move |> checkOkResult
+        
         let! notify = moveTask
-
         notify |> should equal pgnMove
     }
     
@@ -61,7 +62,7 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
     do! blackConn.Close()
 }
 
-let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) (cts: CancellationTokenSource) = task {
+let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) = task {
     use sem = new SemaphoreSlim(maxDegree)
     let waitList =
         tasks
@@ -69,32 +70,24 @@ let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) (cts: Cancell
             do! sem.WaitAsync()
             return task {
                 try
-                    try
-                        do! f x
-                    with e ->
-                        cts.Cancel()
+                    do! f x
                 finally
                     sem.Release() |> ignore
             }
         })
-    let! _ = Task.WhenAll waitList
-    ()
+    do! Task.WhenAll waitList |> Task.WhenAll :> Task
 }
 
-[<Fact(Skip="eq")>]
-//[<Fact>]
+//[<Fact(Skip="eq")>]
+[<Fact>]
 let ``process pgn files on session and check correctness`` () = task {
-    let url = sprintf "http://localhost:%d/command" 1313
-    
 //    let createConnection notificationHandler = task {
-//        let conn = new ServerConnection(url, notificationHandler)
+//        let conn = new ServerConnection(sprintf "http://localhost:%d/command" 1313, notificationHandler)
 //        do! conn.Connect()
 //        return conn
 //    }
 
     let createConnection = createServer()
-    let games = getPgnMoves 300 |> Seq.toList |> List.mapi (fun i x -> i, x)
-    let cts = new CancellationTokenSource()
-    do! taskThrottle 8 (fun (x, i) -> processGame createConnection (x, i)) games cts
-    if cts.IsCancellationRequested then failTest "Something goes wrong - cts cancelled"
+    let games = getPgnMoves 699 |> Seq.toList |> List.mapi (fun i x -> i, x)
+    do! taskThrottle 16 (fun (x, i) -> processGame createConnection (x, i)) games
 }
