@@ -77,8 +77,7 @@ let getMoveDescriptionFromEngine (engine: Engine) =
         | _ -> Some value
 
     let lastMove = engine.LastMove
-    let takenPiece = ifExists lastMove.TakenPiece.PieceType
-                        <| positionToString lastMove.TakenPiece.Position
+    let takenPiece = ifExists lastMove.TakenPiece.PieceType lastMove.TakenPiece.Position
                     
     let move = getMoveAction lastMove.MovingPiecePrimary
     let secondMove = ifExists lastMove.MovingPieceSecondary.PieceType

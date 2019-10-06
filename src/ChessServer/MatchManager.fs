@@ -73,6 +73,7 @@ module private Internal =
                     | Remove channel ->
                         match channels |> tryRemove (find channel) with
                         | Some lst ->
+                            channel.ChangeState New
                             reply.Reply <| RemoveResult (Ok Removed)
                             lst
                         | None ->

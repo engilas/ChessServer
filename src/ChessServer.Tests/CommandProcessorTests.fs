@@ -196,3 +196,14 @@ let ``test disconnect command - active session - stop session``() =
     checkState <| blackInfo.Channel.GetState()
 
     (fun () -> session.ChatMessage "") |> should throw typeof<SessionException>
+    
+[<Fact>]
+let ``test disconnect command - double disconnect``() =
+    let matcher = createMatcher()
+    let query, info = getChannel matcher
+    (query <| MatchCommand defaultMatcherOptions) |> should equal OkResponse
+    info.Channel.GetState() |> should equal Matching
+    query DisconnectCommand |> should equal OkResponse
+    info.Channel.GetState() |> should equal New
+    query DisconnectCommand |> should equal OkResponse
+    info.Channel.GetState() |> should equal New

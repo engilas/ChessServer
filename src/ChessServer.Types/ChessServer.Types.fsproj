@@ -11,6 +11,7 @@
       <Compile Include="Serializer.fs" />
       <Compile Include="ServerSocket.fs" />
       <Compile Include="Socket.fs" />
+      <Compile Include="EngineMappers.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -22,6 +23,12 @@
 
     <ItemGroup>
       <PackageReference Update="FSharp.Core" Version="4.7.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="ChessCoreEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\..\lib\ChessCoreEngine.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

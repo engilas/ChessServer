@@ -115,3 +115,12 @@ let ``test match groups``() =
     checkMatchedChannels channels1.White channels2.Black
     startMatchCheck matcher channels2.White.Channel options2 Queued
     checkMatchedChannels channels1.Black channels2.White
+    
+[<Fact>]
+let ``test stop match - new state``() =
+    let matcher = createMatcher()
+    let channel = channelInfo().White.Channel
+    startMatchCheck matcher channel defaultMatcherOptions Queued
+    channel.GetState() |> should equal Matching
+    stopMatchCheck matcher channel Removed
+    channel.GetState() |> should equal New

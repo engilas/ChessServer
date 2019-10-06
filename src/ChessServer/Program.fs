@@ -113,16 +113,15 @@ let configureServices (services : IServiceCollection) =
 
 let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder) =
     builder.AddConfiguration(context.Configuration.GetSection("Logging"))
-           .AddConsole()
+           .AddConsole(fun c -> c.TimestampFormat <- "[HH:mm:ss] ")
            .AddDebug()
            .AddEventSourceLogger() |> ignore
 
 let configureAppConfiguration (args: string []) (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
-    config
-        .AddJsonFile("appsettings.json", false, true)
-        .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName , true)
-        .AddEnvironmentVariables()
-        .AddCommandLine(args) |> ignore
+    config.AddJsonFile("appsettings.json", false, true)
+          .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName, true)
+          .AddEnvironmentVariables()
+          .AddCommandLine(args) |> ignore
 
 let createWebHostBuilder args =
     let contentRoot = Directory.GetCurrentDirectory()

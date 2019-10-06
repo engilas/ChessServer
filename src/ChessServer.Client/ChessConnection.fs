@@ -62,15 +62,22 @@ type ServerConnection (url: string, notificationHandler) =
         )
         
     let mutable closed = false
-        
-    interface IDisposable with
-         member this.Dispose() =
+    
+    member this.DisposeAsync() =
+         task {
              notifListener.Dispose()
              if not closed then
-                 this.Close().GetAwaiter().GetResult()
-             connection.DisposeAsync().GetAwaiter().GetResult()
-             
+                 do! (this.Close() :> Task).ConfigureAwait(false)
+             do! connection.DisposeAsync().ConfigureAwait(false)
+         } |> ValueTask
+         
+    member this.Dispose() = this.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult()
+        
+    interface IDisposable with
+         member this.Dispose() = this.Dispose()
+    
     member this.Connect() = connection.StartAsync()
+    member this.Connect(ct) = connection.StartAsync(ct)
     
     member this.Ping() = task {
         let msg = Guid.NewGuid().ToString()
@@ -110,8 +117,8 @@ type ServerConnection (url: string, notificationHandler) =
         return checkCommonResponse response
     }
     
-     member this.Close() = task {
-         do! this.Disconnect() :> Task
-         do! connection.StopAsync()
-         closed <- true
-     }
+    member this.Close() = task {
+        do! this.Disconnect() :> Task
+        do! connection.StopAsync()
+        closed <- true
+    }

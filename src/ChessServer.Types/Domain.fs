@@ -18,7 +18,7 @@ type Move = {
 type MoveDescription = { 
     Primary: Move
     Secondary: Move option
-    TakenPiecePos: string option
+    TakenPiecePos: byte option
     PawnPromotion: PieceType option
     Check: bool
     Mate: bool

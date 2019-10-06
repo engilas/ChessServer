@@ -137,6 +137,14 @@ let ``test disconnect command``() = task {
     ()
 }
 
+
+[<Fact>]
+let ``test close``() = task {
+    let createConnection = createServer()
+    use! whiteConn = createConnection notificationHandlerStub
+    do! whiteConn.Close()
+    do! whiteConn.DisposeAsync()
+}
 // больше асинхронных комманд (?)
 //Добавить периодический пинг (чтобы клиент пинговал, сервер отвечал, иначе: если сервер не ответит - дисконнект. Если клиент давно не пинговал - дисконнект)
 // добавить восстановление сесии при дисконнекте

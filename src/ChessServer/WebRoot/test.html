@@ -1,9 +1,16 @@
+<html xmlns="http://www.w3.org/1999/html">
+    <button onclick="match()">Match</button>
+    <input type="text" id="src">Src</input>
+    <input type="text" id="dst">Dst</input>
+    <button onclick="move()">Move</button>
+</html>
+
 <script src="signalr.js"></script>
 
 <script>
 
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:4000/command")
+    .withUrl("http://localhost:" + location.port + "/command")
     .configureLogging(signalR.LogLevel.Information)
     .withAutomaticReconnect()
     .build();
@@ -19,12 +26,22 @@ connection.start().then(function () {
 });
 
 async function match() {
-    let result = await connection.invoke("match", null);
+    let result = await connection.invoke("match", "{}");
     console.log(result);
 }
 
-async function test() {
-    let result = await connection.invoke("testResult", "jsq");
+function strToInt(value) {
+    let zero = "a".charCodeAt(0);
+    let col = value.charCodeAt(0) - zero;
+    let row = 8 - value[1];
+    return col + row * 8
+}
+
+async function move() {
+    let src = strToInt(document.getElementById("src").value);
+    let dst = strToInt(document.getElementById("dst").value);
+    let move = JSON.stringify({src: src, dst: dst});
+    let result = await connection.invoke("move", move);
     console.log(result);
 }
 

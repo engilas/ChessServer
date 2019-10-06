@@ -17,7 +17,6 @@
     <Compile Include="Infrastructure\IocManager.fs" />
     <Compile Include="Infrastructure\Logging.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="EngineMappers.fs" />
     <Compile Include="ChessHelper.fs" />
     <Compile Include="Session\SessionTypes.fs" />
     <Compile Include="Session\SessionAgent.fs" />
@@ -25,8 +24,6 @@
     <Compile Include="MatchManager.fs" />
     <Compile Include="ClientChannelAdapter.fs" />
     <Compile Include="CommandProcessor.fs" />
-    <Compile Include="SocketManager.fs" />
-    <Compile Include="WebSocketMiddleware.fs" />
     <Compile Include="HubContextAccessor.fs" />
     <Compile Include="Hubs.fs" />
     <Compile Include="Program.fs" />

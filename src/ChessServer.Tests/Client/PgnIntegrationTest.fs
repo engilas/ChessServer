@@ -78,14 +78,14 @@ let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) = task {
     do! Task.WhenAll waitList |> Task.WhenAll :> Task
 }
 
-//[<Fact(Skip="eq")>]
-[<Fact>]
+[<Fact(Skip="eq")>]
+//[<Fact>]
 let ``process pgn files on session and check correctness`` () = task {
 //    let createConnection notificationHandler = task {
-//        let conn = new ServerConnection(sprintf "http://localhost:%d/command" 1313, notificationHandler)
-//        do! conn.Connect()
-//        return conn
-//    }
+       //        let conn = new ServerConnection(sprintf "http://localhost:%d/command" 1313, notificationHandler)
+       //        do! conn.Connect()
+       //        return conn
+       //    }
 
     let createConnection = createServer()
     let games = getPgnMoves 699 |> Seq.toList |> List.mapi (fun i x -> i, x)
