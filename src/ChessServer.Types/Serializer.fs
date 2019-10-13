@@ -1,13 +1,12 @@
 ﻿module Serializer 
 
 open Types.Command
-open Microsoft.FSharpLu.Json
-open Types.Domain
+open FSharp.Json
 
 [<AutoOpen>]
 module private Internal =
-    let serialize obj = Compact.serialize obj
-    let inline deserialize str = Compact.deserialize str
+    let serialize obj = Json.serialize obj
+    let inline deserialize str = Json.deserialize str
 
 let serializeMoveCommand (arg: MoveCommand) = serialize arg
 let deserializeMoveCommand arg : MoveCommand = deserialize arg
