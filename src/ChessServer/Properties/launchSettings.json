@@ -2,11 +2,10 @@
   "profiles": {
     "ChessServer": {
       "commandName": "Project",
-      "launchBrowser": false,
+      "commandLineArgs": "--urls http://*:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:4000/"
+      }
     }
   }
 }
