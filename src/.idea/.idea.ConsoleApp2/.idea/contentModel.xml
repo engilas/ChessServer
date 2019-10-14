@@ -13,7 +13,7 @@
         <e p="bin" t="ExcludeRecursive" />
         <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.fsproj" t="IncludeRecursive" />
-        <e p="ClientChannelAdapter.fs" t="Include" />
+        <e p="ClientChannelManager.fs" t="Include" />
         <e p="CommandProcessor.fs" t="Include" />
         <e p="HubContextAccessor.fs" t="Include" />
         <e p="Hubs.fs" t="Include" />

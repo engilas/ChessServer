@@ -11,6 +11,7 @@ module private Internal =
 
     type StateHistoryAgentMessage<'a> =
     | PushState of 'a * AsyncReplyChannel<unit>
+    | PopState of AsyncReplyChannel<'a option>
     | GetHistory of AsyncReplyChannel<'a list>
     | Clear of AsyncReplyChannel<unit>
 
@@ -38,6 +39,7 @@ type StateContainer<'a> = {
 type StateHistoryContainer<'a> = {
     GetHistory: unit -> 'a list
     PushState: 'a -> unit
+    PopState: unit -> 'a option
     WaitState: ('a -> bool) -> Task<'a>
     Clear: unit -> unit
 }
@@ -74,6 +76,11 @@ let createStateHistoryContainer() =
                 match msg with
                 | GetHistory channel -> channel.Reply lst; lst
                 | PushState (newState, channel) -> channel.Reply(); newState::lst
+                | PopState channel ->
+                    match lst with
+                    | x :: xs ->
+                        channel.Reply None; xs
+                    | [] -> channel.Reply None; []
                 | Clear channel -> channel.Reply(); []
             return! loop newLst
         }
@@ -83,12 +90,12 @@ let createStateHistoryContainer() =
     let getHistory() = agent.PostAndReply GetHistory
     let event = Event<_>()
     
-
     {
         GetHistory = getHistory
         PushState = fun x -> 
             agent.PostAndReply (fun ch -> PushState (x, ch))
             event.Trigger x
+        PopState = fun () -> agent.PostAndReply PopState
         WaitState = waitState event (getHistory >> List.tryHead)
         Clear = fun () -> agent.PostAndReply Clear
     }

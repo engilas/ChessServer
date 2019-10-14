@@ -14,10 +14,12 @@ type ClientState =
 | New
 | Matching
 | Matched of Session
+| Disconnected of ClientState
 
 type ClientChannel = {
     Id: string
     PushNotification: Notify -> unit
     ChangeState: ClientState -> unit
     GetState: unit -> ClientState
+    IsDisconnected: unit -> bool
 }

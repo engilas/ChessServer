@@ -12,12 +12,15 @@ open HubContextAccessor
 open System.Collections.Concurrent
 open FSharp.Control.Tasks.V2
 open System.Threading
+open ClientChannelManager
 
 [<AutoOpen>]
-module private Internal = 
+module private Internal =
+    let logger = Logging.getLogger "CommandProcessorHub"
+    
     let channels = ConcurrentDictionary<string, ClientChannel>()
     let disconnectQuery = ConcurrentDictionary<string, Timer>()
-
+    
     let matcher = MatchManager.createMatcher()
 
     let serializeResponse (x: Task<_>) = task {
@@ -26,42 +29,40 @@ module private Internal =
     }
 
     let processCommand = processCommand matcher
+    
+    let tryRemoveDisconnectTimer channel = 
+        let exists, timer = disconnectQuery.TryRemove channel
+        if exists then
+            timer.Dispose()
+            true
+        else
+            false
 
-    let addDisconnectTimer f timeout channel = 
-        let timer = new Timer(fun state -> 
-            f()
-            let t = state :?> Timer;
-            t.Dispose()
+    let addDisconnectTimer f (timeout: TimeSpan) channel = 
+        let timer = new Timer(fun state ->
+            try
+                f()
+                tryRemoveDisconnectTimer channel |> ignore
+            with e ->
+                logger.LogError(e, "Error in disconnect timer")
         )
         if disconnectQuery.TryAdd(channel, timer) then
-            timer.Change(timeout, 0) |> ignore
+            timer.Change(timeout, Timeout.InfiniteTimeSpan) |> ignore
         else
             failwithf "Can't add disconnect timer for channel %s - already exists" channel
 
-    let removeDisconnectTimer channel = 
-        let exists, timer = disconnectQuery.TryGetValue channel
-        if exists then
-            timer.Dispose()
-        else
-            invalidArg "channel" (sprintf "Timer for channel %s does not exists" channel)
+    
+            
+    let checkTrue msg x = if not x then failwith msg
 
-type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubContextAccessor) = 
+type CommandProcessorHub(context: HubContextAccessor) = 
     inherit Hub()
 
     member private this.GetChannel() = channels.TryGetValue this.Context.ConnectionId |> snd
 
     override this.OnConnectedAsync() = 
         let connectionId = this.Context.ConnectionId
-        let stateContainer = createStateContainer New
-        let channel = {
-            Id = connectionId
-            PushNotification = fun x -> this.SendNotify(connectionId, x)
-            ChangeState =
-                fun newState ->
-                    logger.LogInformation("Channel {0} changing state to {1}", connectionId, newState)
-                    stateContainer.SetState newState
-            GetState = stateContainer.GetState
-        }
+        let channel = createChannel connectionId (fun id x -> this.SendNotify(id, x))
         if not <| channels.TryAdd(connectionId, channel) then
             logger.LogError("Channel {0} error: can't add channel", connectionId)
             Task.CompletedTask
@@ -74,17 +75,21 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
 
         let disconnect() =
             this.Disconnect() |> ignore
-            let _ = channels.TryRemove connectionId
+            channels.TryRemove connectionId |> ignore
             logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)    
 
         let channel = this.GetChannel()
-        match channel.GetState() with
-        | Matched session -> 
-            ()
+        let state = channel.GetState()
+        match state with
+        | Matched _ ->
+            channel.ChangeState <| Disconnected state
+            addDisconnectTimer (fun () ->
+                processCommand channel DisconnectCommand |> ignore
+                channels.TryRemove channel.Id |> ignore
+                logger.LogInformation("Removed channel {ch} due timeout", channel.Id)
+            ) (TimeSpan.FromSeconds(30.0)) channel.Id
         | _ ->
             disconnect()
-
-        
         base.OnDisconnectedAsync(exn)
         
     member private this.SendNotify(id, notif) =
@@ -111,8 +116,24 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
         let move = Serializer.deserializeMoveCommand moveCommand
         this.ProcessCommand <| MoveCommand move
 
-    member this.Restore sessionId =
-        ()
+    member this.Restore oldChannelId =
+        let channel = this.GetChannel()
+        match channel.GetState() with
+        | New ->
+            try
+                // todo monad
+                if channel.Id = oldChannelId then failwith "Invalid channel id"
+                let exists, oldChannel = channels.TryGetValue oldChannelId
+                exists |> checkTrue (sprintf "Channel %s does not exists" oldChannelId)
+                tryRemoveDisconnectTimer oldChannel.Id |> checkTrue "Internal error 1"
+                channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 2"
+                let newChannel = replaceWithNewChannel oldChannel channel.Id
+                channels.TryRemove channel.Id |> fst |> checkTrue "Internal error 3"
+                channels.TryAdd(newChannel.Id, newChannel) |> checkTrue "Internal error 4"
+                "Ok"
+            with e ->
+                e.Message
+        | _ -> "Only new channel can do restore"
 
     member this.Disconnect() =
         this.ProcessCommand DisconnectCommand

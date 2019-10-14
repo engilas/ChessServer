@@ -18,11 +18,11 @@
     <Compile Include="Infrastructure\Logging.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="ChessHelper.fs" />
+    <Compile Include="ClientChannelManager.fs" />
     <Compile Include="Session\SessionTypes.fs" />
     <Compile Include="Session\SessionAgent.fs" />
     <Compile Include="Session\Session.fs" />
     <Compile Include="MatchManager.fs" />
-    <Compile Include="ClientChannelAdapter.fs" />
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="HubContextAccessor.fs" />
     <Compile Include="Hubs.fs" />

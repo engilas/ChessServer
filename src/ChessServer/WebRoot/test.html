@@ -40,7 +40,7 @@ function strToInt(value) {
 async function move() {
     let src = strToInt(document.getElementById("src").value);
     let dst = strToInt(document.getElementById("dst").value);
-    let move = JSON.stringify({src: src, dst: dst});
+    let move = JSON.stringify({Src: src, Dst: dst});
     let result = await connection.invoke("move", move);
     console.log(result);
 }
