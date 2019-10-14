@@ -11,18 +11,44 @@ open CommandProcessor
 open HubContextAccessor
 open System.Collections.Concurrent
 open FSharp.Control.Tasks.V2
+open System.Threading
 
-let private matcher = MatchManager.createMatcher()
-let processCommand = processCommand matcher
-let private channels = ConcurrentDictionary<string, ClientChannel>()
+[<AutoOpen>]
+module private Internal = 
+    let channels = ConcurrentDictionary<string, ClientChannel>()
+    let disconnectQuery = ConcurrentDictionary<string, Timer>()
 
-let serializeResponse (x: Task<_>) = task {
-    let! response = x
-    return Serializer.serializeResponse response
-}
+    let matcher = MatchManager.createMatcher()
+
+    let serializeResponse (x: Task<_>) = task {
+        let! response = x
+        return Serializer.serializeResponse response
+    }
+
+    let processCommand = processCommand matcher
+
+    let addDisconnectTimer f timeout channel = 
+        let timer = new Timer(fun state -> 
+            f()
+            let t = state :?> Timer;
+            t.Dispose()
+        )
+        if disconnectQuery.TryAdd(channel, timer) then
+            timer.Change(timeout, 0) |> ignore
+        else
+            failwithf "Can't add disconnect timer for channel %s - already exists" channel
+
+    let removeDisconnectTimer channel = 
+        let exists, timer = disconnectQuery.TryGetValue channel
+        if exists then
+            timer.Dispose()
+        else
+            invalidArg "channel" (sprintf "Timer for channel %s does not exists" channel)
 
 type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubContextAccessor) = 
     inherit Hub()
+
+    member private this.GetChannel() = channels.TryGetValue this.Context.ConnectionId |> snd
 
     override this.OnConnectedAsync() = 
         let connectionId = this.Context.ConnectionId
@@ -45,17 +71,26 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
 
     override this.OnDisconnectedAsync(exn) =
         let connectionId = this.Context.ConnectionId
-        this.Disconnect() |> ignore
-        let _ = channels.TryRemove connectionId
-        logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)
+
+        let disconnect() =
+            this.Disconnect() |> ignore
+            let _ = channels.TryRemove connectionId
+            logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channels.Count)    
+
+        let channel = this.GetChannel()
+        match channel.GetState() with
+        | Matched session -> 
+            ()
+        | _ ->
+            disconnect()
+
+        
         base.OnDisconnectedAsync(exn)
         
     member private this.SendNotify(id, notif) =
         let client = context.GetContext<CommandProcessorHub>().Clients.Client(id)
         client.SendAsync("notification", Serializer.serializeNotify notif)
         |> ignore
-
-    member private this.GetChannel() = channels.TryGetValue this.Context.ConnectionId |> snd
 
     member private this.ProcessCommand request = 
          let channel = this.GetChannel()
@@ -75,6 +110,9 @@ type CommandProcessorHub(logger: ILogger<CommandProcessorHub>, context: HubConte
     member this.Move moveCommand = 
         let move = Serializer.deserializeMoveCommand moveCommand
         this.ProcessCommand <| MoveCommand move
+
+    member this.Restore sessionId =
+        ()
 
     member this.Disconnect() =
         this.ProcessCommand DisconnectCommand

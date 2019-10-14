@@ -65,5 +65,5 @@ let createSessionWithFen fen whitePlayer blackPlayer =
     }
     createSession White, createSession Black
 
-let createSession = createSessionWithFen null
+let createSession = createSessionWithFen String.Empty
 
