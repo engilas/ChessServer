@@ -7,6 +7,7 @@ open FSharp.Control.Tasks.V2
 module private Internal =
     type StateAgentMessage<'a> =
     | SetState of 'a * AsyncReplyChannel<unit>
+    | UpdateState of ('a -> 'a) * AsyncReplyChannel<unit>
     | GetState of AsyncReplyChannel<'a>
 
     type StateHistoryAgentMessage<'a> =
@@ -33,6 +34,7 @@ module private Internal =
 type StateContainer<'a> = {
     GetState: unit -> 'a
     SetState: 'a -> unit
+    UpdateState: ('a -> 'a) -> unit
     WaitState: ('a -> bool) -> Task<'a>
 }
 
@@ -52,19 +54,23 @@ let createStateContainer state =
                 match msg with
                 | GetState channel -> channel.Reply state; state
                 | SetState (newState, channel) -> channel.Reply(); newState
+                | UpdateState (modify, channel) -> channel.Reply(); modify state
             return! loop state
         }
         loop state
     )
 
     let getState() = agent.PostAndReply GetState
+
     let event = Event<_>()
     {
         GetState = getState
-        SetState = 
-            fun x -> 
-                agent.PostAndReply (fun ch -> SetState (x, ch))
-                event.Trigger x
+        SetState = fun x ->
+            agent.PostAndReply (fun ch -> SetState (x, ch))
+            event.Trigger x
+        UpdateState = fun f ->
+            agent.PostAndReply (fun ch -> UpdateState (f, ch))
+            getState() |> f |> event.Trigger
         WaitState = waitState event (getState >> Some)
     }
 

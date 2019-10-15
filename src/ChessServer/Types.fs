@@ -14,7 +14,6 @@ type ClientState =
 | New
 | Matching
 | Matched of Session
-| Disconnected of ClientState
 
 type ClientChannel = {
     Id: string
@@ -22,4 +21,6 @@ type ClientChannel = {
     ChangeState: ClientState -> unit
     GetState: unit -> ClientState
     IsDisconnected: unit -> bool
+    Disconnect: unit -> unit
+    Reconnect: string -> unit
 }

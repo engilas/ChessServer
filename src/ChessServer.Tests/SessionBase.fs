@@ -44,7 +44,10 @@ let channelInfo () =
             PushNotification = notifyContainer.PushState
             ChangeState = stateContainer.SetState
             GetState = stateContainer.GetState
-            IsDisconnected = fun () -> false //todo
+            //todo
+            IsDisconnected = fun () -> false 
+            Disconnect = fun () -> ()
+            Reconnect = fun _ -> () 
         }
 // todo update fs.core to 4.6.2
         let reset() =

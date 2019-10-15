@@ -2,59 +2,61 @@
 
 open StateContainer
 open Types.Channel
+open Types.Command
 open Microsoft.Extensions.Logging
 
 let private logger = Logging.getLogger "ClientChannelManager"
 
+type private ChannelInternalState = {
+    Id: string
+    Disconnected: bool
+    DisconnectedNotifications: Notify list
+    ClientState: ClientState
+}
+
 let createChannel id notify =
-    let stateContainer = createStateContainer New
-    let notificationQueue = createStateHistoryContainer()
+    let state = {
+        Id = id
+        Disconnected = false
+        DisconnectedNotifications = []
+        ClientState = New
+    }
+
+    let stateContainer = createStateContainer state
     let getState = stateContainer.GetState
-    let setState = stateContainer.SetState
+    let getId() = getState().Id
+    let isDisconnected() = getState().Disconnected
+    let getClientState() = stateContainer.GetState().ClientState
+    let setClientState x = stateContainer.UpdateState (fun s -> {s with ClientState = x})
+    let pushState x = 
+        stateContainer.UpdateState (fun s -> {s with DisconnectedNotifications = x :: s.DisconnectedNotifications })
+
     let channel = {
         Id = id
-        // todo flush notif
         PushNotification =
             fun x ->
-                match getState() with
-                | Disconnected _ ->
-                    notificationQueue.PushState x
-                | _ ->
-                    let rec getNotifications() = seq {
-                        match notificationQueue.PopState() with
-                        | Some x -> yield x; yield! getNotifications()
-                        | None -> ()
-                    }
-                    getNotifications()
-                    |> List.ofSeq
-                    |> List.rev
-                    |> List.iter (notify id)
-                    notify id x
+                if isDisconnected() then 
+                    pushState x
+                else notify (getId()) x
         ChangeState =
             fun newState ->
-                logger.LogInformation("Channel {0} changing state to {1}", id, newState)
-                setState newState
-        GetState =
-            fun () ->
-                match getState() with
-                | Disconnected state -> state
-                | x -> x
-        IsDisconnected = fun () ->
-                match getState() with
-                | Disconnected _ -> true
-                | _ -> false
+                logger.LogInformation("Channel {0} changing state to {1}", getId(), newState)
+                setClientState newState
+        GetState = getClientState
+        IsDisconnected = isDisconnected
+        Disconnect = fun () ->
+            if isDisconnected() then
+                invalidOp "Already disconnected"
+            stateContainer.UpdateState (fun s -> {s with Disconnected = true})
+        Reconnect = fun newId ->
+            if not <| isDisconnected() then invalidOp "Can reconnect only disconnected channel"
+            stateContainer.UpdateState (fun s -> {s with Id = newId; Disconnected = false})
+            let notifications = getState().DisconnectedNotifications
+            stateContainer.UpdateState (fun s -> {s with DisconnectedNotifications = []})
+            notifications
+            |> List.rev
+            |> List.iter (notify newId)
     }
     channel
-    
-let disconnectChannel channel =
-    let currentState = channel.GetState()
-    channel.ChangeState <| Disconnected currentState
-    
-let replaceWithNewChannel channel newId =
-    if not <| channel.IsDisconnected() then invalidOp "Can replace only disconnected channel"
-    match channel.GetState() with
-    | state ->
-        // in fact there is (Disconnected x) state
-        channel.ChangeState state
-        {channel with Id = newId}
+
         

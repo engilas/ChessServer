@@ -82,7 +82,7 @@ type CommandProcessorHub(context: HubContextAccessor) =
         let state = channel.GetState()
         match state with
         | Matched _ ->
-            channel.ChangeState <| Disconnected state
+            channel.Disconnect()
             addDisconnectTimer (fun () ->
                 processCommand channel DisconnectCommand |> ignore
                 channels.TryRemove channel.Id |> ignore
@@ -127,9 +127,8 @@ type CommandProcessorHub(context: HubContextAccessor) =
                 exists |> checkTrue (sprintf "Channel %s does not exists" oldChannelId)
                 tryRemoveDisconnectTimer oldChannel.Id |> checkTrue "Internal error 1"
                 channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 2"
-                let newChannel = replaceWithNewChannel oldChannel channel.Id
-                channels.TryRemove channel.Id |> fst |> checkTrue "Internal error 3"
-                channels.TryAdd(newChannel.Id, newChannel) |> checkTrue "Internal error 4"
+                oldChannel.Reconnect channel.Id
+                channels.TryUpdate(channel.Id, oldChannel, channel) |> checkTrue "Internal error 5"
                 "Ok"
             with e ->
                 e.Message
