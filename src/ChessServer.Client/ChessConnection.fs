@@ -61,6 +61,17 @@ type ServerConnection (url: string, notificationHandler) =
             | SessionCloseNotify n -> notificationHandler.SessionCloseNotification n
         )
         
+    let reconnectedEvent =
+      { new IDelegateEvent<_> with
+            member this.AddHandler x = connection.add_Reconnected x
+            member this.RemoveHandler x = connection.remove_Reconnected x }
+      
+    let reconnectingEvent =
+      { new IDelegateEvent<_> with
+            member this.AddHandler x = connection.add_Reconnecting x
+            member this.RemoveHandler x = connection.remove_Reconnecting x }
+
+        
     let mutable closed = false
     
     member this.DisposeAsync() =
@@ -79,7 +90,15 @@ type ServerConnection (url: string, notificationHandler) =
     member this.Connect() = connection.StartAsync()
     member this.Connect(ct) = connection.StartAsync(ct)
     
+    [<CLIEvent>]
+    member this.Reconnected = reconnectedEvent
+    
+    [<CLIEvent>]
+    member this.Reconnecting = reconnectingEvent
+    
     member this.GetConnectionId() = connection.ConnectionId
+    
+    member this.GetHubConnection() = connection
     
     member this.Ping() = task {
         let msg = Guid.NewGuid().ToString()
