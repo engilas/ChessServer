@@ -37,7 +37,7 @@ let createChannel id notify =
             fun x ->
                 if isDisconnected() then 
                     pushState x
-                else notify (getId()) x
+                else notify(getId(), x)
         ChangeState =
             fun newState ->
                 logger.LogInformation("Channel {0} changing state to {1}", getId(), newState)
@@ -55,7 +55,7 @@ let createChannel id notify =
             stateContainer.UpdateState (fun s -> {s with DisconnectedNotifications = []})
             notifications
             |> List.rev
-            |> List.iter (notify newId)
+            |> List.iter (fun x -> notify(newId, x))
     }
     channel
 

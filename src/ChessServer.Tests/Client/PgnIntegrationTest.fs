@@ -80,7 +80,7 @@ let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) = task {
 
 [<Fact(Skip="eq")>]
 //[<Fact>]
-let ``process pgn files on session and check correctness`` () = task {
+let ``process pgn files on session and check correctness - long`` () = task {
 //    let createConnection notificationHandler = task {
        //        let conn = new ServerConnection(sprintf "http://localhost:%d/command" 1313, notificationHandler)
        //        do! conn.Connect()
@@ -90,4 +90,11 @@ let ``process pgn files on session and check correctness`` () = task {
     let createConnection = createServer()
     let games = getPgnMoves 699 |> Seq.toList |> List.mapi (fun i x -> i, x)
     do! taskThrottle 16 (fun (x, i) -> processGame createConnection (x, i)) games
+}
+
+[<Fact>]
+let ``process pgn files on session and check correctness - short`` () = task {
+    let createConnection = createServer()
+    let games = getPgnMoves 64 |> Seq.toList |> List.mapi (fun i x -> i, x)
+    do! taskThrottle 4 (fun (x, i) -> processGame createConnection (x, i)) games
 }

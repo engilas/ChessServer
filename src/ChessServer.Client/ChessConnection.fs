@@ -79,6 +79,8 @@ type ServerConnection (url: string, notificationHandler) =
     member this.Connect() = connection.StartAsync()
     member this.Connect(ct) = connection.StartAsync(ct)
     
+    member this.GetConnectionId() = connection.ConnectionId
+    
     member this.Ping() = task {
         let msg = Guid.NewGuid().ToString()
         let! response = connection.InvokeAsync<_>("ping", msg) |> parseResponse

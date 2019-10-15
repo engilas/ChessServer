@@ -6,13 +6,15 @@ open System.Threading.Tasks
 open Types.Channel
 open Types.Command
 open Microsoft.Extensions.Logging
-open StateContainer
 open CommandProcessor
 open HubContextAccessor
 open System.Collections.Concurrent
 open FSharp.Control.Tasks.V2
 open System.Threading
 open ClientChannelManager
+
+// todo DANGER! move to config! for test purposes
+let mutable disconnectTimeout = TimeSpan.FromSeconds(30.0)
 
 [<AutoOpen>]
 module private Internal =
@@ -50,8 +52,6 @@ module private Internal =
             timer.Change(timeout, Timeout.InfiniteTimeSpan) |> ignore
         else
             failwithf "Can't add disconnect timer for channel %s - already exists" channel
-
-    
             
     let checkTrue msg x = if not x then failwith msg
 
@@ -62,7 +62,7 @@ type CommandProcessorHub(context: HubContextAccessor) =
 
     override this.OnConnectedAsync() = 
         let connectionId = this.Context.ConnectionId
-        let channel = createChannel connectionId (fun id x -> this.SendNotify(id, x))
+        let channel = createChannel connectionId this.SendNotify
         if not <| channels.TryAdd(connectionId, channel) then
             logger.LogError("Channel {0} error: can't add channel", connectionId)
             Task.CompletedTask
@@ -87,7 +87,7 @@ type CommandProcessorHub(context: HubContextAccessor) =
                 processCommand channel DisconnectCommand |> ignore
                 channels.TryRemove channel.Id |> ignore
                 logger.LogInformation("Removed channel {ch} due timeout", channel.Id)
-            ) (TimeSpan.FromSeconds(30.0)) channel.Id
+            ) disconnectTimeout channel.Id
         | _ ->
             disconnect()
         base.OnDisconnectedAsync(exn)
@@ -117,6 +117,7 @@ type CommandProcessorHub(context: HubContextAccessor) =
         this.ProcessCommand <| MoveCommand move
 
     member this.Restore oldChannelId =
+        let getError = ReconnectError >> ErrorResponse
         let channel = this.GetChannel()
         match channel.GetState() with
         | New ->
@@ -129,10 +130,10 @@ type CommandProcessorHub(context: HubContextAccessor) =
                 channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 2"
                 oldChannel.Reconnect channel.Id
                 channels.TryUpdate(channel.Id, oldChannel, channel) |> checkTrue "Internal error 5"
-                "Ok"
+                OkResponse
             with e ->
-                e.Message
-        | _ -> "Only new channel can do restore"
+                getError e.Message
+        | _ -> getError "Only new channel can do restore"
 
     member this.Disconnect() =
         this.ProcessCommand DisconnectCommand

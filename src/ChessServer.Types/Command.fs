@@ -37,6 +37,7 @@ type ServerError =
 | InvalidStateErrorResponse of string
 | MatchingErrorResponse
 | MoveErrorResponse of MoveError
+| ReconnectError of string
 | InternalErrorResponse
     
 type MatchOptions = {
