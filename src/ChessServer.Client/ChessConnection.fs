@@ -71,6 +71,12 @@ type ServerConnection (url: string, notificationHandler) =
             member this.AddHandler x = connection.add_Reconnecting x
             member this.RemoveHandler x = connection.remove_Reconnecting x }
 
+    let invokeCommand method args checker = task {
+        let! response =
+            connection.InvokeCoreAsync<_>(method, Array.ofList args)
+            |> parseResponse
+        return checker response
+    }
         
     let mutable closed = false
     
@@ -78,7 +84,7 @@ type ServerConnection (url: string, notificationHandler) =
          task {
              notifListener.Dispose()
              if not closed then
-                 do! (this.Close() :> Task).ConfigureAwait(false)
+                 do! connection.StopAsync().ConfigureAwait(false)
              do! connection.DisposeAsync().ConfigureAwait(false)
          } |> ValueTask
          
@@ -100,43 +106,29 @@ type ServerConnection (url: string, notificationHandler) =
     
     member this.GetHubConnection() = connection
     
-    member this.Ping() = task {
+    member this.Ping() =
         let msg = Guid.NewGuid().ToString()
-        let! response = connection.InvokeAsync<_>("ping", msg) |> parseResponse
-        return
+        invokeCommand "ping" [msg] (fun response ->
             match response with
             | PingResponse {Message = x} when x = msg -> response
             | ErrorResponse _ -> response
-            | _ -> failwithf "Invalid response %A" response 
-    }
+            | _ -> failwithf "Invalid response %A" response
+        )
     
-    member this.Match options = task {
-        let! response =
-            connection.InvokeAsync<_>("match", Serializer.serializeMatchOptions options)
-            |> parseResponse
-        return checkCommonResponse response
-    }
+    member this.Match options =
+        invokeCommand "match" [Serializer.serializeMatchOptions options] checkCommonResponse
         
-    member this.Chat (msg: string) = task {
-        let! response =
-            connection.InvokeAsync<_>("chat", msg)
-            |> parseResponse
-        return checkCommonResponse response
-    }
+    member this.Chat (msg: string) =
+        invokeCommand "chat" [msg] checkCommonResponse
         
-     member this.Move command = task {
-         let! response =
-             connection.InvokeAsync<_>("move", Serializer.serializeMoveCommand command)
-             |> parseResponse
-         return checkCommonResponse response
-    }
+     member this.Move command =
+        invokeCommand "move" [Serializer.serializeMoveCommand command] checkCommonResponse
          
-    member this.Disconnect() = task {
-        let! response =
-            connection.InvokeAsync<_>("disconnect")
-            |> parseResponse
-        return checkCommonResponse response
-    }
+    member this.Disconnect() =
+        invokeCommand "disconnect" [] checkCommonResponse
+    
+    member this.Restore(id: string) =
+        invokeCommand "restore" [id] checkCommonResponse
     
     member this.Close() = task {
         do! this.Disconnect() :> Task

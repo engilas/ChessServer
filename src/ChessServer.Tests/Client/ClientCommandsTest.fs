@@ -141,14 +141,23 @@ let ``test disconnect command``() = task {
 [<Fact>]
 let ``test close``() = task {
     let createConnection = createServer()
-    use! whiteConn = createConnection notificationHandlerStub
-    do! whiteConn.Close()
-    do! whiteConn.DisposeAsync()
+    use! conn = createConnection notificationHandlerStub
+    do! conn.Close()
+    do! conn.DisposeAsync()
 }
 
-//[<Fact>]
-//let ``test close``() = task {
-//}
+[<Fact>]
+let ``test restore``() = task {
+    let createConnection = createServer()
+    let! whiteConn = createConnection notificationHandlerStub
+    use! blackConn = createConnection notificationHandlerStub
+    do! whiteConn.Match defaultMatcherOptions |> checkOkResult
+    do! blackConn.Match defaultMatcherOptions |> checkOkResult
+    let id = whiteConn.GetConnectionId()
+    do! whiteConn.DisposeAsync()
+    let! newWhiteConn = createConnection notificationHandlerStub
+    do! newWhiteConn.Restore id |> checkOkResult
+}
 
 // больше асинхронных комманд (?)
 //Добавить периодический пинг (чтобы клиент пинговал, сервер отвечал, иначе: если сервер не ответит - дисконнект. Если клиент давно не пинговал - дисконнект)
