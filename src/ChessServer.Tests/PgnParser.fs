@@ -228,6 +228,7 @@ let private parallelProcess intercept list =
         |> List.ofArray
         |> parseGame
     )
+    |> PSeq.filter(fun x -> x.Length > 0)
 
 let parseAll = prepareText >> parallelProcess id
 let parse count = prepareText >> parallelProcess (List.take count)

@@ -16,12 +16,13 @@ open ChessConnection
 
 let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, game) = task {
     let stateContainer = createStateHistoryContainer()
+    let endGameContainer = createStateHistoryContainer()
     
     let handler = {
         notificationHandlerStub with 
             SessionStartNotification = notificatorEmptyFunc
             SessionCloseNotification = notificatorEmptyFunc
-            EndGameNotification = notificatorEmptyFunc
+            EndGameNotification = endGameContainer.PushState
             MoveNotification = stateContainer.PushState
     }
     
@@ -57,6 +58,35 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         | Some move -> 
             do! processMove blackConn move
         | None -> ()
+        
+    let checkEndGame color = task {
+        // wait events
+        let rec waitSecond cnt = task {
+            if cnt < 10 then
+                match  endGameContainer.GetHistory().Length with
+                | 2 -> ()
+                | _ -> do! Task.Delay(1000)
+                       return! waitSecond (cnt + 1)
+        }
+        do! waitSecond 0
+            
+        match endGameContainer.GetHistory() with
+        | endGame1 :: endGame2 :: [] when endGame1 = endGame2 ->
+            match endGame1.Result with
+            | WhiteWin -> color |> should equal White
+            | BlackWin -> color |> should equal Black
+            | Draw -> failwith "Draw is not supported yet"
+        // bug when i = 1824
+        | x -> failwithf "Invalid end game notification %A: i = %d" x i
+    }
+    
+    let last = List.last game
+    if last.WhiteMove.Mate then do! checkEndGame White
+    else
+        match last.BlackMove with
+        | Some row ->
+            if row.Mate then do! checkEndGame Black
+        | None -> ()
 
     do! whiteConn.Close()
     do! blackConn.Close()
@@ -75,10 +105,13 @@ let rec taskThrottle maxDegree (f: 'a -> Task<_>) (tasks: 'a list) = task {
                     sem.Release() |> ignore
             }
         })
-    do! Task.WhenAll waitList |> Task.WhenAll :> Task
+    let! taskList = Task.WhenAll waitList
+    let! _ = taskList |> Task.WhenAll
+    for task in taskList do
+        if not <| task.IsCompletedSuccessfully then failTest "Not all tasks completed successfully"
 }
 
-[<Fact(Skip="eq")>]
+[<Fact(Skip="long")>]
 //[<Fact>]
 let ``process pgn files on session and check correctness - long`` () = task {
 //    let createConnection notificationHandler = task {
@@ -88,7 +121,7 @@ let ``process pgn files on session and check correctness - long`` () = task {
        //    }
 
     let createConnection = createServer()
-    let games = getPgnMoves 699 |> Seq.toList |> List.mapi (fun i x -> i, x)
+    let games = allPgnMoves() |> Seq.toList |> List.mapi (fun i x -> i, x)
     do! taskThrottle 16 (fun (x, i) -> processGame createConnection (x, i)) games
 }
 

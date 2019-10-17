@@ -123,17 +123,19 @@ type CommandProcessorHub(context: HubContextAccessor) =
         | New ->
             try
                 // todo monad
-                if channel.Id = oldChannelId then failwith "Invalid channel id"
+                let defaultMsg = "Invalid channel"
+                if channel.Id = oldChannelId then failwith defaultMsg
                 let exists, oldChannel = channels.TryGetValue oldChannelId
-                exists |> checkTrue (sprintf "Channel %s does not exists" oldChannelId)
-                tryRemoveDisconnectTimer oldChannel.Id |> checkTrue "Internal error 1"
-                channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 2"
+                exists |> checkTrue defaultMsg
+                tryRemoveDisconnectTimer oldChannel.Id |> checkTrue defaultMsg
+                channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 1"
                 oldChannel.Reconnect channel.Id
-                channels.TryUpdate(channel.Id, oldChannel, channel) |> checkTrue "Internal error 5"
+                channels.TryUpdate(channel.Id, oldChannel, channel) |> checkTrue "Internal error 2"
                 OkResponse
             with e ->
                 getError e.Message
         | _ -> getError "Only new channel can do restore"
+        |> Serializer.serializeResponse
 
     member this.Disconnect() =
         this.ProcessCommand DisconnectCommand
