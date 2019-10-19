@@ -11,7 +11,6 @@
         <e p="appsettings.Development.json" t="Include" />
         <e p="appsettings.json" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
-        <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.fsproj" t="IncludeRecursive" />
         <e p="ClientChannelManager.fs" t="Include" />
         <e p="CommandProcessor.fs" t="Include" />
@@ -78,6 +77,7 @@
       </e>
       <e p="ChessServer.Types" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
+        <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.Types.fsproj" t="IncludeRecursive" />
         <e p="Command.fs" t="Include" />
         <e p="Domain.fs" t="Include" />
