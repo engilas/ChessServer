@@ -9,7 +9,7 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Tests", "ChessS
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Client", "ChessServer.Client\ChessServer.Client.fsproj", "{8767BC7C-BD5F-44DA-AD5F-92734D2FC1FD}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Types", "ChessServer.Types\ChessServer.Types.fsproj", "{3A691C47-2000-4528-BCE3-FD22DF286445}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChessServer.Common", "ChessServer.Common\ChessServer.Common.fsproj", "{3A691C47-2000-4528-BCE3-FD22DF286445}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

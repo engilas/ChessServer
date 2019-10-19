@@ -14,11 +14,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ChessServer.Types\ChessServer.Types.fsproj" />
+      <PackageReference Update="FSharp.Core" Version="4.6.2" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="FSharp.Core" Version="4.6.2" />
+      <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
     </ItemGroup>
 
 </Project>

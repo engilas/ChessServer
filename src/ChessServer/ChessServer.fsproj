@@ -35,10 +35,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChessServer.Types\ChessServer.Types.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="ChessCoreEngine">
       <HintPath>..\..\lib\ChessCoreEngine.dll</HintPath>
     </Reference>
@@ -52,6 +48,10 @@
 
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
   </ItemGroup>
 
 

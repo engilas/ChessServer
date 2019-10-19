@@ -43,7 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChessServer.Client\ChessServer.Client.fsproj" />
-    <ProjectReference Include="..\ChessServer.Types\ChessServer.Types.fsproj" />
+    <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
     <ProjectReference Include="..\ChessServer\ChessServer.fsproj" />
   </ItemGroup>
 
