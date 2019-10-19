@@ -1,4 +1,6 @@
-﻿module MatchManager
+﻿module ChessServer.MatchManager
+
+open ChessServer.Common
 open Helper
 open Types.Channel
 open Types.Command

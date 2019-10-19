@@ -1,13 +1,14 @@
-﻿module PgnTests
+﻿module ChessServer.Tests.Session.PgnTests
 
 open Xunit
+open ChessServer
+open ChessServer.Tests
+open ChessServer.Common
 open PgnParser
-open System.IO
 open SessionBase
 open Types.Command
 open Types.Channel
 open FsUnit.Xunit
-open TestHelper
 open FSharp.Collections.ParallelSeq
 open Types.Domain
 

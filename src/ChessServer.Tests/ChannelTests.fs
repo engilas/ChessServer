@@ -1,4 +1,7 @@
 ﻿module ChessServer.Tests.ChannelTests
+
+open ChessServer
+open ChessServer.Common
 open System.Threading.Tasks
 open ClientChannelManager
 open FSharp.Control.Tasks.V2

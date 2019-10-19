@@ -1,6 +1,7 @@
-﻿module ClientChannelManager
+﻿module ChessServer.ClientChannelManager
 
 open StateContainer
+open ChessServer.Common
 open Types.Channel
 open Types.Command
 open Microsoft.Extensions.Logging

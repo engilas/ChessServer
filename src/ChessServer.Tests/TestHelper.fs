@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module TestHelper
+module ChessServer.Tests.TestHelper
 
 open FsUnit.Xunit
 open System

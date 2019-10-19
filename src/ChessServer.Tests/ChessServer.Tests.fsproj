@@ -25,10 +25,10 @@
     <Compile Include="ChessHelperTests.fs" />
     <Compile Include="MatcherTests.fs" />
     <Compile Include="CommandProcessorTests.fs" />
+    <Compile Include="ChannelTests.fs" />
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Compile Include="ChannelTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

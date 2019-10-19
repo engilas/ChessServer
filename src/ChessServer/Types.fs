@@ -1,6 +1,7 @@
-﻿module Types.Channel
+﻿module ChessServer.Types.Channel
 
-open Command
+open ChessServer.Common
+open Types.Command
 
 type MoveResult = Result<unit, MoveError>
 

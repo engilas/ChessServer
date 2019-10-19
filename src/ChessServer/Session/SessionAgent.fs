@@ -1,7 +1,8 @@
-﻿module SessionAgent
+﻿module ChessServer.SessionAgent
 
 open SessionTypes
 open ChessEngine.Engine
+open ChessServer.Common
 open ChessHelper
 open Types.Domain
 open Types.Channel

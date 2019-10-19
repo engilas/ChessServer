@@ -1,4 +1,4 @@
-﻿module HubContextAccessor
+﻿module ChessServer.HubContextAccessor
 
 open Microsoft.AspNetCore.SignalR
 open System

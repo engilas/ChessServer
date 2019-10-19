@@ -1,9 +1,11 @@
-﻿module SessionMoveTests
+﻿module ChessServer.Tests.Session.SessionMoveTests
 
+open ChessServer
+open ChessServer.Common
+open ChessServer.Tests
 open Types.Channel
 open Types.Command
 open Xunit
-open TestHelper
 open SessionBase
 open SessionTestData
 

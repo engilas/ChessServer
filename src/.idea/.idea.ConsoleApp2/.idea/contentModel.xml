@@ -49,12 +49,14 @@
         <e p="bin" t="ExcludeRecursive" />
         <e p="ChessHelper.fs" t="Include" />
         <e p="ChessServer.Common.fsproj" t="IncludeRecursive" />
-        <e p="Command.fs" t="Include" />
-        <e p="Domain.fs" t="Include" />
         <e p="EngineMappers.fs" t="Include" />
         <e p="Helper.fs" t="Include" />
         <e p="obj" t="ExcludeRecursive" />
         <e p="Serializer.fs" t="Include" />
+        <e p="Types" t="Include">
+          <e p="Command.fs" t="Include" />
+          <e p="Domain.fs" t="Include" />
+        </e>
       </e>
       <e p="ChessServer.Tests" t="IncludeRecursive">
         <e p="appsettings.json" t="Include" />

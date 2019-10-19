@@ -1,10 +1,14 @@
-module PgnIntegrationTest
+module ChessServer.Tests.Client.PgnIntegrationTest
 
 open System
+open ChessServer
+open ChessServer.Client
 open Xunit
+open ChessServer.Tests
 open PgnParser
 open ClientBase
 open SessionBase
+open ChessServer.Common
 open Types.Command
 open FsUnit.Xunit
 open Types.Domain

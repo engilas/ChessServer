@@ -1,15 +1,16 @@
-﻿module CommandProcessorTests
+﻿module ChessServer.Tests.CommandProcessorTests
 
+open ChessServer
+open ChessServer.Common
+open ChessServer.Tests
 open FsUnit
 open Xunit
 open CommandProcessor
-open TestHelper
 open Types.Channel
 open Types.Command
 open SessionBase
 open MatchManager
 open StateContainer
-open System.Threading
 open ChessHelper
 open SessionTypes
 

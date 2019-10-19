@@ -1,8 +1,9 @@
-﻿module ChessConnection
+﻿module ChessServer.Client.ChessConnection
 
 open Microsoft.AspNetCore.SignalR.Client
 open System.Threading.Tasks
 open Microsoft.Extensions.Logging
+open ChessServer.Common
 open Types.Command
 open Types.Domain
 open System

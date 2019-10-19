@@ -1,11 +1,13 @@
-﻿module SessionStuffTests
+﻿module ChessServer.Tests.Session.SessionStuffTests
 
+open ChessServer
+open ChessServer.Common
+open ChessServer.Tests
 open Types.Channel
 open FsUnit.Xunit
 open SessionTypes
 open Types.Command
 open Xunit
-open TestHelper
 open SessionBase
 
 [<Fact>]

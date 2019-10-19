@@ -1,4 +1,4 @@
-﻿module Types.Domain
+﻿module ChessServer.Common.Types.Domain
 
 type Color = White | Black
 

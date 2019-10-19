@@ -1,8 +1,9 @@
-﻿module Hubs
+﻿module ChessServer.Hubs
 
 open System
 open Microsoft.AspNetCore.SignalR
 open System.Threading.Tasks
+open ChessServer.Common
 open Types.Channel
 open Types.Command
 open Microsoft.Extensions.Logging

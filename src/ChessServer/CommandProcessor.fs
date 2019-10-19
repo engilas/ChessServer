@@ -1,5 +1,6 @@
-﻿module CommandProcessor
+﻿module ChessServer.CommandProcessor
 
+open ChessServer.Common
 open Types.Command
 open Types.Channel
 open Microsoft.Extensions.Logging

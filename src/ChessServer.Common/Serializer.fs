@@ -1,4 +1,4 @@
-﻿module Serializer 
+﻿module ChessServer.Common.Serializer 
 
 open Types.Command
 open FSharp.Json

@@ -1,4 +1,4 @@
-﻿module EngineMappers
+﻿module ChessServer.Common.EngineMappers
 
 open ChessEngine.Engine
 open Types.Domain

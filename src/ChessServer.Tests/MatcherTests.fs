@@ -1,10 +1,12 @@
-﻿module MatcherTests
+﻿module ChessServer.Tests.MatcherTests
 
+open ChessServer
+open ChessServer.Common
+open ChessServer.Tests
 open FsUnit
 open SessionBase
 open MatchManager
 open FsUnit.Xunit
-open TestHelper
 open Types.Channel
 open Types.Command
 open Types.Domain

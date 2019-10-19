@@ -1,4 +1,4 @@
-﻿module Types.Command
+﻿module ChessServer.Common.Types.Command
 
 open Domain
 

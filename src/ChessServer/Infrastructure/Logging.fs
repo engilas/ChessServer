@@ -1,4 +1,4 @@
-﻿module Logging
+﻿module ChessServer.Logging
 
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging

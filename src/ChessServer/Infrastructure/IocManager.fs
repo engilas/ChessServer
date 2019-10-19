@@ -1,4 +1,4 @@
-﻿module IocManager
+﻿module ChessServer.IocManager
 
 open System
 

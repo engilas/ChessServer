@@ -1,8 +1,9 @@
-﻿module ChessHelperTests
+﻿module ChessServer.Tests.ChessHelperTests
 
+open ChessServer.Common
+open ChessServer.Tests
 open Xunit
 open ChessHelper
-open TestHelper
 open FsUnit.Xunit
 
 [<Theory>]

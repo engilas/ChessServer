@@ -1,7 +1,10 @@
-﻿module ClientCommandsTest
+﻿module ChessServer.Tests.Client.ClientCommandsTest
 
 open System
-open System
+open ChessServer
+open ChessServer.Client
+open ChessServer.Common
+open ChessServer.Tests
 open ChessConnection
 open Xunit
 open ClientBase

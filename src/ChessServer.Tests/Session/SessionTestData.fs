@@ -1,7 +1,7 @@
-﻿module SessionTestData
+﻿module ChessServer.Tests.Session.SessionTestData
 
+open ChessServer.Tests
 open SessionBase
-open TestHelper
 
 [<AutoOpen>]
 module private Internal =

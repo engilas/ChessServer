@@ -1,8 +1,10 @@
-﻿module ClientBase
+﻿module ChessServer.Tests.Client.ClientBase
 
 open System.Threading
 open FSharp.Control.Tasks.V2
 open ChessServer
+open ChessServer.Client
+open ChessServer.Common
 open Microsoft.AspNetCore.Hosting
 open System.Threading.Tasks
 open ChessConnection

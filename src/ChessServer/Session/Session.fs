@@ -1,5 +1,6 @@
-﻿module Session
+﻿module ChessServer.Session
     
+open ChessServer.Common
 open Types.Channel
 open Types.Domain
 open Types.Command

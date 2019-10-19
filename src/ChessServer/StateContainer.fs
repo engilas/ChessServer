@@ -1,4 +1,4 @@
-﻿module StateContainer
+﻿module ChessServer.StateContainer
 
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2

@@ -1,4 +1,4 @@
-﻿module ChessHelper
+﻿module ChessServer.Common.ChessHelper
 
 open System
 open Types.Domain

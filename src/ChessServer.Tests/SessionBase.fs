@@ -1,12 +1,13 @@
-﻿module SessionBase
+﻿module ChessServer.Tests.SessionBase
 
 open System
-open System.Threading
 open System.Threading.Tasks
+open ChessServer
+open ChessServer.Common
 open Session
 open Types.Channel
 open Types.Command
-open ChessConnection
+open Client.ChessConnection
 open ChessHelper
 open StateContainer
 

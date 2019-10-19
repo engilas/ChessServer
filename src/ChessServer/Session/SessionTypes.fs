@@ -1,7 +1,8 @@
-﻿module SessionTypes
+﻿module ChessServer.SessionTypes
 
 open Types.Channel
 open ChessEngine.Engine
+open ChessServer.Common
 open Types.Domain
 open Types.Command
 

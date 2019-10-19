@@ -1,6 +1,6 @@
-﻿module PgnParser
+﻿module ChessServer.Tests.PgnParser
 
-open Types.Command
+open ChessServer.Common
 open Types.Domain
 open System
 open System.IO
