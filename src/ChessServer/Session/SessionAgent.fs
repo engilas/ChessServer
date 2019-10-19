@@ -69,7 +69,7 @@ let createSessionAgent state onEndGame = MailboxProcessor<SessionMessage>.Start(
     let rec loop state = async {
         let! message = inbox.Receive()
         let nextState = 
-            try 
+            try
                 match message with
                 | Regular (move, replyChannel) ->
                     try 
@@ -81,7 +81,6 @@ let createSessionAgent state onEndGame = MailboxProcessor<SessionMessage>.Start(
                 | GetState channel -> channel.Reply state; state
                 | Terminate -> {state with Status = Terminated}
             with e ->
-                // todo: не вылетит ли исключение при форматтинге %A (уже вылетало)
                 logger.LogError(e, (sprintf "Exception occurred in agent loop. Current state: %A" state))
                 state
         //todo use state container
