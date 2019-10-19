@@ -50,18 +50,18 @@ let positionToString (pos: byte) =
 let moveAction src dst = {Src = src; Dst = dst}
 
 let checkEndGame (engine: Engine) =
-    if engine.StaleMate then
-        if engine.InsufficientMaterial then
-            (Draw, "Draw by insufficient material") |> Some
-        elif engine.RepeatedMove then
+    if engine.StaleMate && engine.InsufficientMaterial then
+//        if engine.InsufficientMaterial then
+        (Draw, "Draw by insufficient material") |> Some
+//        elif engine.RepeatedMove then
         //    (Draw, "Draw by repetition") |> Some
-            None
-        elif engine.FiftyMove then
+//            None
+//         elif engine.FiftyMove then
         //    (Draw, "Draw by fifty move rule") |> Some
-            None
+//            None
         // enable later by game params
-        else
-            (Draw, "Stalemate") |> Some
+//        else
+//            (Draw, "Stalemate") |> Some
     elif (engine.GetWhiteMate()) then
         (BlackWin, "Black mates") |> Some
     elif (engine.GetBlackMate()) then

@@ -1,4 +1,4 @@
-﻿module PgnIntegrationTest
+module PgnIntegrationTest
 
 open System
 open Xunit
@@ -62,21 +62,20 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
     let checkEndGame color = task {
         // wait events
         let rec waitSecond cnt = task {
-            if cnt < 10 then
+            if cnt < 5 then
                 match  endGameContainer.GetHistory().Length with
                 | 2 -> ()
                 | _ -> do! Task.Delay(1000)
                        return! waitSecond (cnt + 1)
         }
         do! waitSecond 0
-            
+        
         match endGameContainer.GetHistory() with
         | endGame1 :: endGame2 :: [] when endGame1 = endGame2 ->
             match endGame1.Result with
             | WhiteWin -> color |> should equal White
             | BlackWin -> color |> should equal Black
             | Draw -> failwith "Draw is not supported yet"
-        // bug when i = 1824
         | x -> failwithf "Invalid end game notification %A: i = %d" x i
     }
     

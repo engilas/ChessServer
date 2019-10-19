@@ -206,33 +206,33 @@ module private Internal =
             GameId = gameId
         })
 
+    let prepareText files =
+        let text = 
+            files
+            |> List.map File.ReadAllText
+            |> List.fold (fun (acc: StringBuilder) elem -> acc.AppendLine(elem)) (StringBuilder())
+            |> (fun sb -> sb.ToString())
 
-let private prepareText files =
-    let text = 
-        files
-        |> List.map File.ReadAllText
-        |> List.fold (fun (acc: StringBuilder) elem -> acc.AppendLine(elem)) (StringBuilder())
-        |> (fun sb -> sb.ToString())
+        let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
 
-    let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
-
-    splitRegex.Split(text)
-    |> List.ofArray
-    |> List.filter (not << String.IsNullOrWhiteSpace)
-
-let private parallelProcess intercept list =
-    list
-    |> intercept
-    |> PSeq.map (fun (game: string) ->
-        game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) 
+        splitRegex.Split(text)
         |> List.ofArray
-        |> parseGame
-    )
-    |> PSeq.filter(fun x -> x.Length > 0)
+        |> List.filter (not << String.IsNullOrWhiteSpace)
 
-let parseAll = prepareText >> parallelProcess id
-let parse count = prepareText >> parallelProcess (List.take count)
+    let parallelProcess intercept list =
+        list
+        |> intercept
+        |> PSeq.map (fun (game: string) ->
+            game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) 
+            |> List.ofArray
+            |> parseGame
+        )
+        |> PSeq.filter(fun x -> x.Length > 0)
 
-let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
+    let parseAll = prepareText >> parallelProcess id
+    let parse count = prepareText >> parallelProcess (List.take count)
+    let pgnFiles = Directory.EnumerateFiles("pgn") |> List.ofSeq
+    
+let getOneMove index = pgnFiles |> (prepareText >> parallelProcess (fun x -> [x |> List.item index]) >> PSeq.head)
 let getPgnMoves count = parse count pgnFiles
 let allPgnMoves() = parseAll pgnFiles
