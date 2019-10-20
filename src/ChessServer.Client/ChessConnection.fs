@@ -72,6 +72,12 @@ type ServerConnection (url: string, notificationHandler) =
             member this.AddHandler x = connection.add_Reconnecting x
             member this.RemoveHandler x = connection.remove_Reconnecting x }
 
+
+    let closedEvent =
+      { new IDelegateEvent<_> with
+            member this.AddHandler x = connection.add_Closed x
+            member this.RemoveHandler x = connection.remove_Closed x }
+
     let invokeCommand method args checker = task {
         let! response =
             connection.InvokeCoreAsync<_>(method, Array.ofList args)
@@ -102,6 +108,9 @@ type ServerConnection (url: string, notificationHandler) =
     
     [<CLIEvent>]
     member this.Reconnecting = reconnectingEvent
+
+    [<CLIEvent>]
+    member this.Closed = closedEvent
     
     member this.GetConnectionId() = connection.ConnectionId
     

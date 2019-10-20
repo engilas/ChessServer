@@ -14,6 +14,7 @@ open SessionBase
 open StateContainer
 open Types.Domain
 open FsUnit.Xunit
+open System.Threading.Tasks
 
 let getMatchedConnectionsFull handler = task {
     let createConnection = createServer()
@@ -226,6 +227,23 @@ let ``test disconnect by timeout``() = task {
     let delta = DateTime.Now - start
     if delta < TimeSpan.FromSeconds(1.0) then
         failTest "Disconnect time test failed"
+}
+
+[<Fact>]
+let ``check events``() = task {
+    let createConnection = createServer()
+    use! conn = createConnection notificationHandlerStub
+
+    let stateContainer = createStateContainer 0
+
+    conn.add_Closed(fun e -> 
+        stateContainer.SetState 1
+        Task.CompletedTask
+    )
+
+    do! conn.Close()
+    let! _ = stateContainer.WaitState ((=) 1)
+    ()
 }
 
 // больше асинхронных комманд (?)
