@@ -140,3 +140,6 @@ type CommandProcessorHub(context: HubContextAccessor) =
 
     member this.Disconnect() =
         this.ProcessCommand DisconnectCommand
+
+    member this.TestDisconnect() =
+        this.Context.Abort()

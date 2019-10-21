@@ -44,10 +44,14 @@ let private parseResponse (x: Task<_>) = task {
 }
 
 type ServerConnection (url: string, notificationHandler) =
+    let delayIntervals = 
+        Array.replicate 10 3
+        |> Array.map (double >> TimeSpan.FromSeconds)
+
     let connection =
         (new HubConnectionBuilder())
             .WithUrl(url)
-            .WithAutomaticReconnect()
+            .WithAutomaticReconnect(delayIntervals)
             .ConfigureLogging(fun c -> c.SetMinimumLevel(LogLevel.Information) |> ignore)
             .Build()
             
@@ -145,3 +149,6 @@ type ServerConnection (url: string, notificationHandler) =
         do! connection.StopAsync()
         closed <- true
     }
+
+    member this.TestDisconnect() =
+        connection.InvokeAsync("TestDisconnect")

@@ -230,7 +230,7 @@ let ``test disconnect by timeout``() = task {
 }
 
 [<Fact>]
-let ``check events``() = task {
+let ``check close event``() = task {
     let createConnection = createServer()
     use! conn = createConnection notificationHandlerStub
 
@@ -244,6 +244,33 @@ let ``check events``() = task {
     do! conn.Close()
     let! _ = stateContainer.WaitState ((=) 1)
     ()
+}
+
+[<Fact>]
+let ``check events after restore``() = task {
+    let stateContainer = createStateHistoryContainer()
+
+    let handler = {
+        notificationHandlerStub with 
+            MoveNotification = stateContainer.PushState
+    }
+
+    let! gw, gb = getMatchedConnections handler
+    use conn = gw()
+    use _ = gb()
+
+    let reconnState = createStateContainer 0
+    
+    conn.add_Reconnected(fun e -> 
+        reconnState.SetState 1
+        Task.CompletedTask
+    )
+
+    do! conn.TestDisconnect()
+    let! _ = reconnState.WaitState ((=) 1)
+    ()
+
+    //todo add check move notifies
 }
 
 // больше асинхронных комманд (?)
