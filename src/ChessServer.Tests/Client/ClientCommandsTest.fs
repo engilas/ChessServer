@@ -256,21 +256,38 @@ let ``check events after restore``() = task {
     }
 
     let! gw, gb = getMatchedConnections handler
-    use conn = gw()
-    use _ = gb()
+    use whiteConn = gw()
+    use blackConn = gb()
 
     let reconnState = createStateContainer 0
     
-    conn.add_Reconnected(fun e -> 
+    whiteConn.add_Reconnected(fun e -> 
         reconnState.SetState 1
         Task.CompletedTask
     )
 
-    do! conn.TestDisconnect()
+    let id = whiteConn.GetConnectionId()
+    
+    try
+        do! whiteConn.TestDisconnect()
+    with :? TaskCanceledException ->
+        ()
     let! _ = reconnState.WaitState ((=) 1)
-    ()
 
-    //todo add check move notifies
+    do! whiteConn.Restore(id) |> checkOkResult
+    let move = getMove "a2" "a4"
+    do! whiteConn.Move move |> checkOkResult
+
+    let! _ = stateContainer.WaitState (fun m -> m.Primary.Src = move.Src)
+
+    let move = getMove "a7" "a5"
+    do! blackConn.Move move |> checkOkResult
+
+    let! _ = stateContainer.WaitState (fun m -> m.Primary.Src = move.Src)
+
+    let moves = stateContainer.GetHistory()
+
+    ()
 }
 
 // больше асинхронных комманд (?)
