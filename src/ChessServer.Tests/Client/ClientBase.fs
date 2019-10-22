@@ -13,17 +13,20 @@ open Types.Command
 type PortResourceMessage = AsyncReplyChannel<int>
 
 let portResourceAgent = MailboxProcessor<PortResourceMessage>.Start(fun inbox ->
+    let min = 15000
+    let max = 65535
+
     let rec loop port = async {
         let! channel = inbox.Receive()
         channel.Reply port
         let nextPort = 
             match port with
-            | 65535 -> 2000
+            | x when x = max -> min
             | x -> x + 1
         return! loop nextPort
     }
     
-    loop 2000
+    loop min
 )
 
 let createServer() = 
