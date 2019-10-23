@@ -10,7 +10,7 @@
 <script>
 
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:" + location.port + "/command")
+    .withUrl(location.origin + "/command")
     .configureLogging(signalR.LogLevel.Information)
     .withAutomaticReconnect()
     .build();
@@ -34,7 +34,7 @@ function strToInt(value) {
     let zero = "a".charCodeAt(0);
     let col = value.charCodeAt(0) - zero;
     let row = 8 - value[1];
-    return col + row * 8
+    return col + row * 8;
 }
 
 async function move() {
