@@ -13,9 +13,7 @@ open System.Collections.Concurrent
 open FSharp.Control.Tasks.V2
 open System.Threading
 open ClientChannelManager
-
-// todo DANGER! move to config! for test purposes
-let mutable disconnectTimeout = TimeSpan.FromSeconds(30.0)
+open Microsoft.Extensions.Configuration
 
 [<AutoOpen>]
 module private Internal =
@@ -25,11 +23,6 @@ module private Internal =
     let disconnectQuery = ConcurrentDictionary<string, Timer>()
     
     let matcher = MatchManager.createMatcher()
-
-    let serializeResponse (x: Task<_>) = task {
-        let! response = x
-        return Serializer.serializeResponse response
-    }
 
     let processCommand = processCommand matcher
     
@@ -56,8 +49,10 @@ module private Internal =
             
     let checkTrue msg x = if not x then failwith msg
 
-type CommandProcessorHub(context: HubContextAccessor) = 
+type CommandProcessorHub(context: HubContextAccessor, config: IConfiguration) = 
     inherit Hub()
+
+    let disconnectTimeout = TimeSpan.FromSeconds(config.GetValue<double>("DisconnectTimeout"))
 
     member private this.GetChannel() = channels.TryGetValue this.Context.ConnectionId |> snd
 
@@ -86,9 +81,9 @@ type CommandProcessorHub(context: HubContextAccessor) =
             channel.Disconnect()
             addDisconnectTimer (fun () ->
                 processCommand channel DisconnectCommand |> ignore
-                channels.TryRemove channel.Id |> ignore
+                channels.TryRemove connectionId |> ignore
                 logger.LogInformation("Removed channel {ch} due timeout", channel.Id)
-            ) disconnectTimeout channel.Id
+            ) disconnectTimeout connectionId
         | _ ->
             disconnect()
         base.OnDisconnectedAsync(exn)
@@ -117,21 +112,22 @@ type CommandProcessorHub(context: HubContextAccessor) =
         let move = Serializer.deserializeMoveCommand moveCommand
         this.ProcessCommand <| MoveCommand move
 
-    member this.Restore oldChannelId =
+    member this.Restore oldConnectionId =
         let getError = ReconnectError >> ErrorResponse
+        let newConnectionId = this.Context.ConnectionId
         let channel = this.GetChannel()
         match channel.GetState() with
         | New ->
             try
                 // todo monad
                 let defaultMsg = "Invalid channel"
-                if channel.Id = oldChannelId then failwith defaultMsg
-                let exists, oldChannel = channels.TryGetValue oldChannelId
+                if newConnectionId = oldConnectionId then failwith defaultMsg
+                let exists, oldChannel = channels.TryGetValue oldConnectionId
                 exists |> checkTrue defaultMsg
-                tryRemoveDisconnectTimer oldChannel.Id |> checkTrue defaultMsg
-                channels.TryRemove oldChannel.Id |> fst |> checkTrue "Internal error 1"
-                oldChannel.Reconnect channel.Id
-                channels.TryUpdate(channel.Id, oldChannel, channel) |> checkTrue "Internal error 2"
+                tryRemoveDisconnectTimer oldConnectionId |> checkTrue defaultMsg
+                channels.TryRemove oldConnectionId |> fst |> checkTrue "Internal error 1"
+                oldChannel.Reconnect newConnectionId
+                channels.TryUpdate(newConnectionId, oldChannel, channel) |> checkTrue "Internal error 2"
                 OkResponse
             with e ->
                 getError e.Message

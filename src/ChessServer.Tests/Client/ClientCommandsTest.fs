@@ -16,8 +16,11 @@ open Types.Domain
 open FsUnit.Xunit
 open System.Threading.Tasks
 
-let getMatchedConnectionsFull handler = task {
-    let createConnection = createServer()
+let createServerArgs = createServer
+let createServer() = createServer None
+
+let getMatchedConnectionsFull handler args = task {
+    let createConnection = createServerArgs args
     let stateContainer = createStateHistoryContainer()
     
     let handler = { handler with SessionStartNotification = fun x -> stateContainer.PushState x }
@@ -37,10 +40,12 @@ let getMatchedConnectionsFull handler = task {
     return (fun () -> whiteConn), (fun () -> blackConn), createConnection
 }
 
-let getMatchedConnections handler = task {
-    let! w, g, c = getMatchedConnectionsFull handler
+let getMatchedConnectionsArgs handler args = task {
+    let! w, g, c = getMatchedConnectionsFull handler args
     return w, g
 }
+
+let getMatchedConnections handler = getMatchedConnectionsArgs handler None
 
 [<Fact>]
 let ``test ping command``() = task {
@@ -193,7 +198,7 @@ let ``test restore - active channel``() = task {
 
 [<Fact>]
 let ``test restore``() = task {
-    let! gw, gb, createConnection = getMatchedConnectionsFull notificationHandlerStub
+    let! gw, gb, createConnection = getMatchedConnectionsFull notificationHandlerStub None
     let whiteConn = gw()
     use _ = gb()
     
@@ -205,15 +210,13 @@ let ``test restore``() = task {
 
 [<Fact>]
 let ``test disconnect by timeout``() = task {
-    Hubs.disconnectTimeout <- TimeSpan.FromSeconds(1.0)
-    
     let stateContainer = createStateContainer None
     let handler = {
         notificationHandlerStub with 
             SessionCloseNotification = fun x -> stateContainer.SetState <| Some x
     }
     
-    let! gw, gb = getMatchedConnections handler
+    let! gw, gb = getMatchedConnectionsArgs handler (Some [|"--DisconnectTimeout=1"|])
     let whiteConn = gw()
     use _ = gb()
     
@@ -288,6 +291,35 @@ let ``check events after restore``() = task {
     let moves = stateContainer.GetHistory()
 
     ()
+}
+
+[<Fact>]
+let ``check double restore``() = task {
+    let! gw, gb = getMatchedConnections notificationHandlerStub
+    use whiteConn = gw()
+    use _ = gb()
+
+    let reconnState = createStateContainer 0
+    whiteConn.add_Reconnected(fun e -> 
+        reconnState.SetState 1
+        Task.CompletedTask
+    )
+
+    let reconnect() = task {
+        reconnState.SetState 0
+
+        let id = whiteConn.GetConnectionId()
+        try
+            do! whiteConn.TestDisconnect()
+        with :? TaskCanceledException ->
+            ()
+        let! _ = reconnState.WaitState ((=) 1)
+
+        do! whiteConn.Restore(id) |> checkOkResult
+    }
+
+    do! reconnect()
+    do! reconnect()
 }
 
 // больше асинхронных комманд (?)

@@ -29,9 +29,9 @@ let portResourceAgent = MailboxProcessor<PortResourceMessage>.Start(fun inbox ->
     loop min
 )
 
-let createServer() = 
+let createServer(args) =
     let port = portResourceAgent.PostAndReply id
-    let builder = (App.createWebHostBuilder [||]).UseUrls(sprintf "http://*:%d" port)
+    let builder = (App.createWebHostBuilder <| Option.defaultValue [||] args).UseUrls(sprintf "http://*:%d" port)
     let _ = builder.Build().RunAsync()
     let url = sprintf "http://localhost:%d/command" port
 

@@ -16,6 +16,10 @@ type ClientState =
 | Matching
 | Matched of Session
 
+
+// todo отвязаться от signalr id
+// при реконнекте conn id в хабе меняется, ClientChannel.Id остается прежним
+
 type ClientChannel = {
     Id: string
     PushNotification: Notify -> unit
