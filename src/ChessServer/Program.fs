@@ -1,143 +1,152 @@
-module ChessServer.App
+open Suave
+open Suave.Logging
+open ChessServer.Network.Server
 
-open System
-open System.IO
-open Microsoft.AspNetCore
-open Microsoft.AspNetCore.Builder
-open Microsoft.AspNetCore.Cors.Infrastructure
-open Microsoft.AspNetCore.Hosting
-open Microsoft.Extensions.Logging
-open Microsoft.Extensions.DependencyInjection
-open Giraffe
-open Microsoft.Extensions.Configuration
-open Hubs
-open HubContextAccessor
+//module ChessServer.App
 
-// ---------------------------------
-// Models
-// ---------------------------------
+//open System
+//open System.IO
+//open Microsoft.AspNetCore
+//open Microsoft.AspNetCore.Builder
+//open Microsoft.AspNetCore.Cors.Infrastructure
+//open Microsoft.AspNetCore.Hosting
+//open Microsoft.Extensions.Logging
+//open Microsoft.Extensions.DependencyInjection
+//open Giraffe
+//open Microsoft.Extensions.Configuration
+//open Hubs
+//open HubContextAccessor
 
-type Message =
-    {
-        Text : string
-    }
+//// ---------------------------------
+//// Models
+//// ---------------------------------
 
-// ---------------------------------
-// Views
-// ---------------------------------
+//type Message =
+//    {
+//        Text : string
+//    }
 
-module Views =
-    open GiraffeViewEngine
+//// ---------------------------------
+//// Views
+//// ---------------------------------
 
-    let layout (content: XmlNode list) =
-        html [] [
-            head [] [
-                title []  [ encodedText "ChessServer" ]
-                link [ _rel  "stylesheet"
-                       _type "text/css"
-                       _href "/main.css" ]
-            ]
-            body [] content
-        ]
+//module Views =
+//    open GiraffeViewEngine
 
-    let partial () =
-        h1 [] [ encodedText "ChessServer" ]
+//    let layout (content: XmlNode list) =
+//        html [] [
+//            head [] [
+//                title []  [ encodedText "ChessServer" ]
+//                link [ _rel  "stylesheet"
+//                       _type "text/css"
+//                       _href "/main.css" ]
+//            ]
+//            body [] content
+//        ]
 
-    let index (model : Message) =
-        [
-            partial()
-            p [] [ encodedText model.Text ]
-        ] |> layout
+//    let partial () =
+//        h1 [] [ encodedText "ChessServer" ]
 
-// ---------------------------------
-// Web app
-// ---------------------------------
+//    let index (model : Message) =
+//        [
+//            partial()
+//            p [] [ encodedText model.Text ]
+//        ] |> layout
 
-let indexHandler (name : string) =
-    let greetings = sprintf "Hello %s, from Giraffe!" name
-    let model     = { Text = greetings }
-    let view      = Views.index model
-    htmlView view
+//// ---------------------------------
+//// Web app
+//// ---------------------------------
 
-let webApp =
-    choose [
-        GET >=>
-            choose [
-                route "/" >=> indexHandler "world"
-                routef "/hello/%s" indexHandler
-            ]
-        setStatusCode 404 >=> text "Not Found" ]
+//let indexHandler (name : string) =
+//    let greetings = sprintf "Hello %s, from Giraffe!" name
+//    let model     = { Text = greetings }
+//    let view      = Views.index model
+//    htmlView view
 
-// ---------------------------------
-// Error handler
-// ---------------------------------
+//let webApp =
+//    choose [
+//        GET >=>
+//            choose [
+//                route "/" >=> indexHandler "world"
+//                routef "/hello/%s" indexHandler
+//            ]
+//        setStatusCode 404 >=> text "Not Found" ]
 
-let errorHandler (ex : Exception) (logger : ILogger) =
-    logger.LogError(ex, "An unhandled exception has occurred while executing the request.")
-    clearResponse >=> setStatusCode 500 >=> text ex.Message
+//// ---------------------------------
+//// Error handler
+//// ---------------------------------
 
-// ---------------------------------
-// Config and Main
-// ---------------------------------
+//let errorHandler (ex : Exception) (logger : ILogger) =
+//    logger.LogError(ex, "An unhandled exception has occurred while executing the request.")
+//    clearResponse >=> setStatusCode 500 >=> text ex.Message
 
-let configureCors (configuration: IConfiguration) (builder : CorsPolicyBuilder) =
-    builder.WithOrigins(configuration.["AllowedHosts"])
-           .AllowAnyMethod()
-           .AllowAnyHeader()
-           |> ignore
+//// ---------------------------------
+//// Config and Main
+//// ---------------------------------
 
-let configureApp (app : IApplicationBuilder) =
-    let env = app.ApplicationServices.GetService<IHostingEnvironment>()
-    let config = app.ApplicationServices.GetService<IConfiguration>()
-    IocManager.setContainer app.ApplicationServices
-    (match env.IsDevelopment() with
-    | true  -> app.UseDeveloperExceptionPage()
-    | false -> app.UseGiraffeErrorHandler errorHandler)
-        //.UseHttpsRedirection()
-        .UseCors(configureCors config)
-        .UseWebSockets()
-        //.UseMiddleware<Middleware.WebSocketMiddleware>()
-        .UseStaticFiles()
-        .UseRouting()
-        .UseEndpoints(fun endpoints ->
-            endpoints.MapHub<CommandProcessorHub>("/command") |> ignore
-        )
-        .UseGiraffe(webApp)
+//let configureCors (configuration: IConfiguration) (builder : CorsPolicyBuilder) =
+//    builder.WithOrigins(configuration.["AllowedHosts"])
+//           .AllowAnyMethod()
+//           .AllowAnyHeader()
+//           |> ignore
 
-let configureServices (services : IServiceCollection) =
-    services.AddCors() 
-            .AddGiraffe()
-            .AddSingleton<HubContextAccessor>()
-            .AddSignalR(fun x -> x.EnableDetailedErrors <- Nullable true)
-            |> ignore
+//let configureApp (app : IApplicationBuilder) =
+//    let env = app.ApplicationServices.GetService<IHostingEnvironment>()
+//    let config = app.ApplicationServices.GetService<IConfiguration>()
+//    IocManager.setContainer app.ApplicationServices
+//    (match env.IsDevelopment() with
+//    | true  -> app.UseDeveloperExceptionPage()
+//    | false -> app.UseGiraffeErrorHandler errorHandler)
+//        //.UseHttpsRedirection()
+//        .UseCors(configureCors config)
+//        .UseWebSockets()
+//        //.UseMiddleware<Middleware.WebSocketMiddleware>()
+//        .UseStaticFiles()
+//        .UseRouting()
+//        .UseEndpoints(fun endpoints ->
+//            endpoints.MapHub<CommandProcessorHub>("/command") |> ignore
+//        )
+//        .UseGiraffe(webApp)
 
-let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder) =
-    builder.AddConfiguration(context.Configuration.GetSection("Logging"))
-           .AddConsole(fun c -> c.TimestampFormat <- "[HH:mm:ss] ")
-           .AddDebug()
-           .AddEventSourceLogger() |> ignore
+//let configureServices (services : IServiceCollection) =
+//    services.AddCors() 
+//            .AddGiraffe()
+//            .AddSingleton<HubContextAccessor>()
+//            .AddSignalR(fun x -> x.EnableDetailedErrors <- Nullable true)
+//            |> ignore
 
-let configureAppConfiguration (args: string []) (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
-    config.AddJsonFile("appsettings.json", false, true)
-          .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName, true)
-          .AddEnvironmentVariables()
-          .AddCommandLine(args) |> ignore
+//let configureLogging (context: WebHostBuilderContext) (builder : ILoggingBuilder) =
+//    builder.AddConfiguration(context.Configuration.GetSection("Logging"))
+//           .AddConsole(fun c -> c.TimestampFormat <- "[HH:mm:ss] ")
+//           .AddDebug()
+//           .AddEventSourceLogger() |> ignore
 
-let createWebHostBuilder args =
-    let contentRoot = Directory.GetCurrentDirectory()
-    let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    WebHost.CreateDefaultBuilder(args)
-        .UseKestrel()
-        .UseContentRoot(contentRoot)
-        .UseWebRoot(webRoot)
-        .ConfigureAppConfiguration(configureAppConfiguration args)
-        .Configure(Action<IApplicationBuilder> configureApp)
-        .ConfigureServices(configureServices)
-        .ConfigureLogging(configureLogging)
+//let configureAppConfiguration (args: string []) (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
+//    config.AddJsonFile("appsettings.json", false, true)
+//          .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName, true)
+//          .AddEnvironmentVariables()
+//          .AddCommandLine(args) |> ignore
+
+//let createWebHostBuilder args =
+//    let contentRoot = Directory.GetCurrentDirectory()
+//    let webRoot     = Path.Combine(contentRoot, "WebRoot")
+//    WebHost.CreateDefaultBuilder(args)
+//        .UseKestrel()
+//        .UseContentRoot(contentRoot)
+//        .UseWebRoot(webRoot)
+//        .ConfigureAppConfiguration(configureAppConfiguration args)
+//        .Configure(Action<IApplicationBuilder> configureApp)
+//        .ConfigureServices(configureServices)
+//        .ConfigureLogging(configureLogging)
+
+//[<EntryPoint>]
+//let main args =
+//    createWebHostBuilder(args)
+//        .Build()
+//        .Run()
+//    0
 
 [<EntryPoint>]
-let main args =
-    createWebHostBuilder(args)
-        .Build()
-        .Run()
+let main _ = 
+    startWebServer {defaultConfig with logger = Targets.create Verbose [||] } app
     0

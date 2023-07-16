@@ -9,7 +9,7 @@ open Microsoft.Extensions.Logging
 let private logger = Logging.getLogger "ClientChannelManager"
 
 type private ChannelInternalState = {
-    Id: string
+    Id: ConnectionId
     Disconnected: bool
     DisconnectedNotifications: Notify list
     ClientState: ClientState
@@ -25,7 +25,7 @@ let createChannel id notify =
 
     let stateContainer = createStateContainer state
     let getState = stateContainer.GetState
-    let getId() = getState().Id
+    //let getId() = getState().Id
     let isDisconnected() = getState().Disconnected
     let getClientState() = stateContainer.GetState().ClientState
     let setClientState x = stateContainer.UpdateState (fun s -> {s with ClientState = x})
@@ -38,10 +38,10 @@ let createChannel id notify =
             fun x ->
                 if isDisconnected() then 
                     pushState x
-                else notify(getId(), x)
+                else notify x
         ChangeState =
             fun newState ->
-                logger.LogInformation("Channel {0} changing state to {1}", getId(), newState)
+                logger.LogInformation("Channel {0} changing state to {1}", id, newState)
                 setClientState newState
         GetState = getClientState
         IsDisconnected = isDisconnected
@@ -56,7 +56,7 @@ let createChannel id notify =
             stateContainer.UpdateState (fun s -> {s with DisconnectedNotifications = []})
             notifications
             |> List.rev
-            |> List.iter (fun x -> notify(newId, x))
+            |> List.iter notify // todo notify newid ??
     }
     channel
 

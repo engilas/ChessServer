@@ -2,6 +2,9 @@
 
 open Domain
 
+type ConnectionId = ConnectionId of string
+type MessageId = MessageId of string
+
 type Message = { Message: string }
 
 type PingCommand = Message
@@ -27,6 +30,10 @@ type EndGameNotify = {
     Reason: string
 }
 
+type ReconnectCommand = {
+    OldConnectionId: ConnectionId
+}
+
 type MoveError =
 | NotYourTurn
 | InvalidMove
@@ -50,11 +57,16 @@ type Request =
 | ChatCommand of ChatCommand
 | MoveCommand of MoveCommand
 | DisconnectCommand
+| ReconnectCommand of ReconnectCommand
 
 type Response =
 | PingResponse of PingResult
 | ErrorResponse of ServerError
 | OkResponse
+
+type RequestDto = MessageId * Request
+
+type ResponseDto = MessageId * Response
 
 type SessionCloseReason =
 | OpponentDisconnected
@@ -65,3 +77,7 @@ type Notify =
 | EndGameNotify of EndGameNotify
 | SessionStartNotify of SessionStartNotify
 | SessionCloseNotify of SessionCloseReason
+
+type ServerMessage = 
+| Response of ResponseDto
+| Notification of Notify

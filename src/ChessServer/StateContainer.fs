@@ -84,7 +84,7 @@ let createStateHistoryContainer() =
                 | PushState (newState, channel) -> channel.Reply(); newState::lst
                 | PopState channel ->
                     match lst with
-                    | x :: xs ->
+                    | _ :: xs ->
                         channel.Reply None; xs
                     | [] -> channel.Reply None; []
                 | Clear channel -> channel.Reply(); []

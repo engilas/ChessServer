@@ -1,19 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <TargetFramework>net7.0</TargetFramework>
+	<OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Anemonis.JsonRpc" Version="1.23.0" />
-    <PackageReference Include="FSharp.Data" Version="3.1.1" />
-    <PackageReference Include="Giraffe" Version="3.6.0" />
+    <PackageReference Include="Suave" Version="2.6.2" />
     <PackageReference Include="TaskBuilder.fs" Version="2.1.*" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="StateContainer.fs" />
+	<Compile Include="StateContainer.fs" />
     <Compile Include="Infrastructure\IocManager.fs" />
     <Compile Include="Infrastructure\Logging.fs" />
     <Compile Include="Types.fs" />
@@ -25,7 +23,11 @@
     <Compile Include="CommandProcessor.fs" />
     <Compile Include="HubContextAccessor.fs" />
     <Compile Include="Hubs.fs" />
+    <Compile Include="network\ChannelManager.fs" />
+	<Compile Include="network\WebsocketServer.fs" />
     <Compile Include="Program.fs" />
+	<None Include="SocketManager.fs" />
+    <None Include="WebSocketMiddleware.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,12 +49,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.6.2" />
+    <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
+    <ProjectReference Include="..\ChessServer2\ChessServer2.fsproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
-  </ItemGroup>
+  <ItemGroup />
 
 
 </Project>

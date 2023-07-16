@@ -15,5 +15,11 @@ let deserializeNotify arg : Notify = deserialize arg
 let serializeMatchOptions (arg: MatchOptions) = serialize arg
 let deserializeMatchOptions arg : MatchOptions = deserialize arg
 
-let serializeResponse (arg: Response) = serialize arg
+let serializeResponse id response =
+    let message = (id, response)
+    serialize message
+
 let deserializeResponse arg : Response = deserialize arg
+let serializeClientMessage (request: RequestDto) = serialize request
+let deserializeClientMessage str : RequestDto = deserialize str
+let deserializeServerMessage str : ServerMessage = deserialize str

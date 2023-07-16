@@ -21,11 +21,20 @@ type ClientState =
 // при реконнекте conn id в хабе меняется, ClientChannel.Id остается прежним
 
 type ClientChannel = {
-    Id: string
+    Id: ConnectionId
     PushNotification: Notify -> unit
     ChangeState: ClientState -> unit
     GetState: unit -> ClientState
     IsDisconnected: unit -> bool
     Disconnect: unit -> unit
-    Reconnect: string -> unit
+    Reconnect: ConnectionId -> unit
+}
+
+type ChannelManager = {
+    Add: ClientChannel -> unit
+    Get: ConnectionId -> Option<ClientChannel>
+    Remove: ConnectionId -> unit
+    Count: unit -> int
+    AddDisconnectTimeout: (unit -> unit) -> ConnectionId -> unit
+    RemoveDisconnectTimeout: ConnectionId -> unit
 }

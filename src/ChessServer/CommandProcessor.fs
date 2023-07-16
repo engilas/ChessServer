@@ -13,10 +13,10 @@ let getErrorResponse error errorObj =
         logger.LogError(sprintf "Generating error response %A with error object %A" error errorObj)
         ErrorResponse error
 let getInvalidStateError state error cmd id =
-    logger.LogInformation(sprintf "Can't process command %A for channel %s with state %A" cmd id state)
+    logger.LogInformation(sprintf "Can't process command %A for channel %A with state %A" cmd id state)
     ErrorResponse (InvalidStateErrorResponse error)
 
-let processCommand matcher channel cmd =
+let processCommand matcher channelManager channel cmd =
     let getErrorResponse error errorObj = 
         logger.LogError(sprintf "Generating error response %A with error object %A" error errorObj)
         ErrorResponse error
@@ -59,6 +59,35 @@ let processCommand matcher channel cmd =
                     logger.LogWarning("Session already closed. {id}", channel.Id)
                     OkResponse
             | _ -> OkResponse
+        | ReconnectCommand args ->
+            let getError = ReconnectError >> ErrorResponse
+            let newConnectionId = channel.Id
+            match channel.GetState() with
+            | New ->
+                try
+                    // todo monad
+                    let defaultMsg = "Invalid channel"
+                    if newConnectionId = args.OldConnectionId then failwith defaultMsg
+                    match channelManager.Get args.OldConnectionId with 
+                    | Some oldChannel ->
+                        channelManager.RemoveDisconnectTimeout oldChannel.Id
+                        channelManager.Remove oldChannel.Id
+                        oldChannel.Reconnect newConnectionId
+                        //channels.TryUpdate(newConnectionId, oldChannel, channel) |> checkTrue "Internal error 2"
+                        channelManager.Add oldChannel // ?? wtf
+                        OkResponse
+                    | None ->
+                        failwith defaultMsg
+                    //exists |> checkTrue defaultMsg
+                    //tryRemoveDisconnectTimer oldConnectionId |> checkTrue defaultMsg
+                    //channels.TryRemove oldConnectionId |> fst |> checkTrue "Internal error 1"
+                    //oldChannel.Reconnect newConnectionId
+                    //channels.TryUpdate(newConnectionId, oldChannel, channel) |> checkTrue "Internal error 2"
+                    //OkResponse
+                with e ->
+                    getError e.Message
+            | _ -> getError "Only new channel can do restore"
+            //|> Serializer.serializeResponse
     with e ->
         logger.LogError(e, "Error occurred while processing command")
         getErrorResponse InternalErrorResponse e.Message
