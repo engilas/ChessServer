@@ -12,10 +12,12 @@ open FsUnit.Xunit
 open FSharp.Collections.ParallelSeq
 open Types.Domain
 
-[<Fact(Skip="too long")>]
+//[<Fact(Skip="too long")>]
+[<Fact>]
 let ``test pgn files`` () = allPgnMoves() |> PSeq.toArray |> ignore
 
-[<Fact(Skip="too long")>]
+//[<Fact(Skip="too long")>]
+[<Fact>]
 let ``process pgn files on session and check correctness`` () = 
     let moves = allPgnMoves()
     moves |> PSeq.iter (fun game -> 

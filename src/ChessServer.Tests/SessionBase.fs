@@ -20,7 +20,7 @@ let moveStub = {
 }
 
 type TestChannel = {
-    Id: string
+    Id: ConnectionId
     Channel: ClientChannel
     GetNotify: unit -> Notify list
     Reset: unit -> unit
@@ -66,8 +66,8 @@ let channelInfo () =
     
     let guid = Guid.NewGuid().ToString()
 
-    let white = createTestChannel (sprintf "w%s" guid)
-    let black = createTestChannel (sprintf "b%s" guid)
+    let white = createTestChannel (ConnectionId (sprintf "w%s" guid))
+    let black = createTestChannel (ConnectionId (sprintf "b%s" guid))
     
     {
         White = white

@@ -123,14 +123,14 @@ let ``process pgn files on session and check correctness - long`` () = task {
        //        return conn
        //    }
 
-    let createConnection = createServer None
+    use! server = createServer()
     let games = allPgnMoves() |> Seq.toList |> List.mapi (fun i x -> i, x)
-    do! taskThrottle 16 (fun (x, i) -> processGame createConnection (x, i)) games
+    do! taskThrottle 16 (fun (x, i) -> processGame (server.GetClient) (x, i)) games
 }
 
 [<Fact>]
 let ``process pgn files on session and check correctness - short`` () = task {
-    let createConnection = createServer None
+    use! server = createServer()
     let games = getPgnMoves 64 |> Seq.toList |> List.mapi (fun i x -> i, x)
-    do! taskThrottle 4 (fun (x, i) -> processGame createConnection (x, i)) games
+    do! taskThrottle 4 (fun (x, i) -> processGame (server.GetClient) (x, i)) games
 }

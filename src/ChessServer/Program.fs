@@ -1,6 +1,7 @@
 open Suave
 open Suave.Logging
 open ChessServer.Network.Server
+open System.Threading.Tasks
 
 //module ChessServer.App
 

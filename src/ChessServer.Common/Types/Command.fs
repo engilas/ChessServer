@@ -58,11 +58,13 @@ type Request =
 | MoveCommand of MoveCommand
 | DisconnectCommand
 | ReconnectCommand of ReconnectCommand
+| GetConnectionId
 
 type Response =
 | PingResponse of PingResult
 | ErrorResponse of ServerError
 | OkResponse
+| ConnectionIdResponse of ConnectionId
 
 type RequestDto = MessageId * Request
 

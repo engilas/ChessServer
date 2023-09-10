@@ -207,6 +207,7 @@ let private ws (webSocket : WebSocket) (context: HttpContext) =
 
     socket {
         let mutable loop = true
+        let emptyResponse = [||] |> ByteSegment
 
         while loop do
             let! msg = webSocket.read()
@@ -220,10 +221,7 @@ let private ws (webSocket : WebSocket) (context: HttpContext) =
 
             | (Close, _, _) ->
                 let disconnect() = socket {
-                    let emptyResponse = [||] |> ByteSegment
-                    do! webSocket.send Close emptyResponse true
                     loop <- false
-                    channelManager.Remove connectionId
                     logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channelManager.Count())    
                 }
 
@@ -237,12 +235,14 @@ let private ws (webSocket : WebSocket) (context: HttpContext) =
                     ) connectionId
                 | _ ->
                     do! disconnect()
+                    channelManager.Remove connectionId
+                do! webSocket.send Close emptyResponse true
 
             | _ -> ()
     }
 
 let app : WebPart =
     choose [
-        path "/websocket" >=> handShake ws
+        path "/ws" >=> handShake ws
         GET >=> choose [ path "/" >=> file "index.html"; browseHome ]
         NOT_FOUND "Found no handlers." ]

@@ -16,7 +16,7 @@ open SessionTypes
 
 let getChannel matcher = 
     let channels = channelInfo()
-    let query = processCommand matcher channels.White.Channel 
+    let query = processCommand matcher ChannelManager.channelManager (channels.White.Channel)
     query, channels.White
 
 let getChannelSimple() = getChannel (createMatcher())

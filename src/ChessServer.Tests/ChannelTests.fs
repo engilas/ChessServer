@@ -13,10 +13,12 @@ open Types.Channel
 
 let notifyStub _ = ()
 
+let createChannel x = (ConnectionId x) |> createChannel
+
 [<Fact>]
 let ``test id``() =
     let channel = createChannel "abcd" notifyStub
-    channel.Id |> should equal "abcd"
+    channel.Id |> should equal (ConnectionId "abcd")
     
 [<Fact>]
 let ``test state``() =
@@ -34,7 +36,7 @@ let ``test push notification - connected state``() = task {
     let channel = createChannel "abcd" container.PushState
     let notify = ChatNotify {Message = "qwe"}
     channel.PushNotification notify
-    let! _ = container.WaitState (fun x -> x = ("abcd", notify))
+    let! _ = container.WaitState (fun x -> x = (notify))
     ()
 }
    
@@ -56,7 +58,7 @@ let ``test reconnect``() =
      let channel = createChannel "abcd" notifyStub
      channel.ChangeState Matching
      channel.Disconnect()
-     channel.Reconnect "qwe"
+     channel.Reconnect (ConnectionId "qwe")
      channel.GetState() |> should equal Matching
      channel.IsDisconnected() |> should equal false
      
@@ -68,8 +70,8 @@ let ``test push notification - disconnected state``() = task {
     channel.PushNotification <| ChatNotify {Message = "qwe"}
     do! Task.Delay(1000)
     container.PopState() |> should equal None
-    channel.Reconnect "asd"
-    let! _ = container.WaitState (fun x -> x = ("asd", ChatNotify {Message = "qwe"}))
+    channel.Reconnect (ConnectionId "asd")
+    let! _ = container.WaitState (fun x -> x = (ChatNotify {Message = "qwe"}))
     ()
 }
      

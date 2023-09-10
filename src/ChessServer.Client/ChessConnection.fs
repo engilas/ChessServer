@@ -46,14 +46,6 @@ let private parseResponse (x: Task<_>) = task {
     return Serializer.deserializeResponse rawResponse
 }
 
-let checkResponse r = task {
-    let! r = r
-    return match r with
-    | OkResponse
-    | ErrorResponse _ -> r
-    | _ -> failwithf "Invalid response %A" r
-}
-
 //let runWebSocketClient uri =
     
 
@@ -79,6 +71,8 @@ type ServerConnection (url: string, notificationHandler) =
     let delayIntervals = 
         Array.replicate 10 3
         |> Array.map (double >> TimeSpan.FromSeconds)
+
+    let mutable connectionId = ConnectionId ""
 
     let cts = new CancellationTokenSource()
     let client = new ClientWebSocket()
@@ -130,27 +124,30 @@ type ServerConnection (url: string, notificationHandler) =
 
     let getResponse request = getResponse (CancellationToken.None) request
 
-    let processResponse = getResponse >> checkResponse
-
     let connect (uri: Uri) =
         client.ConnectAsync(uri, cts.Token)// |> Async.AwaitTask |> Async.RunSynchronously
 
 
     let start (uri: string) = task {
         do! connect (new Uri(uri))
-        do! receiveMessage client cts.Token
+        receiveMessage client cts.Token |> Async.Start
+        let! response = getResponse GetConnectionId
+        connectionId <- 
+            match response with
+            | ConnectionIdResponse id -> id
+            | _ -> failwith "GetConnectionId: Invalid response"
     }
 
     
 
-    interface IAsyncDisposable with
-        member this.DisposeAsync() = 
-            let q = task {
-                cts.Cancel()
-                do! client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None)
-                client.Dispose() 
-            }
-            ValueTask(q)
+    //interface IAsyncDisposable with
+    //    member this.DisposeAsync() = 
+    //        let q = task {
+    //            cts.Cancel()
+    //            do! client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None)
+    //            client.Dispose() 
+    //        }
+    //        ValueTask(q)
 
     //let socket = new ClientWebSocket()
     //let write msg = Socket.write socket msg
@@ -199,12 +196,19 @@ type ServerConnection (url: string, notificationHandler) =
          
     //member this.Dispose() = this.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult()
         
-    //interface IDisposable with
-    //     member this.Dispose() = this.Dispose()
+    interface IDisposable with
+         member this.Dispose() = 
+            client.Dispose()
+            ()
+             //notifListener.Dispose()
+             //if not closed then
+                 //cconn
+             //do! connection.DisposeAsync().ConfigureAwait(false)
     
 
 
     member this.Connect() = start(url)
+
     //member this.Connect(ct) = connection.StartAsync(ct)
     
     //[<CLIEvent>]
@@ -216,19 +220,21 @@ type ServerConnection (url: string, notificationHandler) =
     //[<CLIEvent>]
     //member this.Closed = closedEvent
     
-    //member this.GetConnectionId() = connection.ConnectionId
+    // todo 
+    member this.GetConnectionId() = connectionId
     
     //member this.GetHubConnection() = connection
 
     
     
-    member this.Ping() = task {
-        let msg = Guid.NewGuid().ToString()
-        let! response = PingCommand {Message = msg} |> getResponse
-        match response with
-        | PingResponse {Message = x} when x = msg -> ()
-        | _ -> failwith "Invalid response command"
-    }
+    member this.Ping() = PingCommand {Message = "ping"} |> getResponse
+    //task {
+    //    let msg = Guid.NewGuid().ToString()
+    //    let! response = PingCommand {Message = msg} |> getResponse
+    //    match response with
+    //    | PingResponse {Message = x} when x = msg -> response
+    //    | _ -> failwith "Invalid response command"
+    //}
         //invokeCommand "ping" [msg] (fun response ->
         //    match response with
         //    | PingResponse {Message = x} when x = msg -> response
@@ -237,14 +243,15 @@ type ServerConnection (url: string, notificationHandler) =
         //)
     
 
-    member this.Match options = MatchCommand options |> processResponse
-    member this.Chat msg = ChatCommand {Message = msg} |> processResponse
-    member this.Move command = MoveCommand command |> processResponse
-    member this.Disconnect() = DisconnectCommand |> processResponse
-    member this.Restore id = ReconnectCommand {OldConnectionId = id} |> processResponse
+    member this.Match options = MatchCommand options |> getResponse
+    member this.Chat msg = ChatCommand {Message = msg} |> getResponse
+    member this.Move command = MoveCommand command |> getResponse
+    member this.Disconnect() = DisconnectCommand |> getResponse
+    member this.Restore id = ReconnectCommand {OldConnectionId = id} |> getResponse
     
     member this.Close() = task {
-        do! this.Disconnect() :> Task
+        //do! this.Disconnect() :> Task
+        do! client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", cts.Token)
         cts.Cancel()
         //closed <- true
     }

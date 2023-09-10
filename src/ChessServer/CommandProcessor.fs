@@ -25,6 +25,7 @@ let processCommand matcher channelManager channel cmd =
     try
         match cmd with
         | PingCommand ping -> PingResponse {Message=ping.Message}
+        | GetConnectionId -> channel.Id |> ConnectionIdResponse
         | MatchCommand options ->
             match channel.GetState() with
             | New ->

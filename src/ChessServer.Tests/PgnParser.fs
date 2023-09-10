@@ -223,7 +223,7 @@ module private Internal =
         list
         |> intercept
         |> PSeq.map (fun (game: string) ->
-            game.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) 
+            game.Split('\n', StringSplitOptions.RemoveEmptyEntries) 
             |> List.ofArray
             |> parseGame
         )

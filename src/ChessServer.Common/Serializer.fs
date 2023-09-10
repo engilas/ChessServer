@@ -10,13 +10,17 @@ module private Internal =
 
 let serializeMoveCommand (arg: MoveCommand) = serialize arg
 let deserializeMoveCommand arg : MoveCommand = deserialize arg
-let serializeNotify (arg: Notify) = serialize arg
 let deserializeNotify arg : Notify = deserialize arg
 let serializeMatchOptions (arg: MatchOptions) = serialize arg
 let deserializeMatchOptions arg : MatchOptions = deserialize arg
 
 let serializeResponse id response =
-    let message = (id, response)
+    //let message = (id, response)
+    let message = Response (id, response)
+    serialize message
+
+let serializeNotify (arg: Notify) = 
+    let message = Notification arg
     serialize message
 
 let deserializeResponse arg : Response = deserialize arg
