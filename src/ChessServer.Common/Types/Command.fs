@@ -10,8 +10,7 @@ type Message = { Message: string }
 type PingCommand = Message
 type ChatCommand = Message
 type MoveCommand = { 
-    Src: byte
-    Dst: byte 
+    Move: Move
     PawnPromotion: PieceType option
 }
 

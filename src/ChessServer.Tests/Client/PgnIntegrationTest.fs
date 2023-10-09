@@ -17,8 +17,10 @@ open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
 open ChessConnection
+open ilf.pgn.Data
+open Common.ChessHelper
 
-let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, game) = task {
+let processGame (createConnection: NotificationHandler -> Task<ServerConnection>) (i, (game: PgnMove list)) = task {
     let stateContainer = createStateHistoryContainer()
     let endGameContainer = createStateHistoryContainer()
     
@@ -38,30 +40,54 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
     do! whiteConn.Match matchOptions |> checkOkResult
     do! blackConn.Match matchOptions |> checkOkResult
 
-    let processMove (connection: ServerConnection) pgnMove = task {
-        let primary = pgnMove.Primary
-        let moveTask = stateContainer.WaitState (fun x ->
-            x.Primary.Src = primary.Src && x.Primary.Dst = primary.Dst
-        )
+    let processMove (connection: ServerConnection) (move: IlfMove) = task {
+        //let kl = move.TargetSquare.ToString()
+        //let k = getColumn kl
+        //let kli = getRow kl
+        let parserdMove = moveAction (move.TargetSquare.ToString() |> positionFromString) (move.TargetSquare.ToString() |> positionFromString)
+        //let domainMove = {
+        //    Src = move.tar
+        //}
 
-        let move = {
-            Src = primary.Src
-            Dst = primary.Dst
-            PawnPromotion = pgnMove.PawnPromotion
+        let moveTask = stateContainer.WaitState (fun x ->
+            x.Primary.Src = parserdMove.Src && x.Primary.Dst = parserdMove.Dst
+        )
+        
+        let promoted = 
+            if move.PromotedPiece.HasValue then
+                match move.PromotedPiece.Value with
+                | PieceType.Bishop -> Some Bishop
+                | PieceType.King -> Some King
+                | PieceType.Queen -> Some Queen
+                | PieceType.Rook -> Some Rook
+                | PieceType.Knight -> Some Knight
+                | PieceType.Pawn -> Some Pawn
+                | _ -> failwithf "unknown type %A" move.PromotedPiece.Value
+            else None
+        //move.OriginSquare.ToString() |> positionFromString
+
+        let moveCommand : MoveCommand = {
+            Move = parserdMove
+            PawnPromotion = promoted
         }
 
-        do! connection.Move move |> checkOkResult
+        do! connection.Move moveCommand |> checkOkResult
         
         let! notify = moveTask
-        notify |> should equal pgnMove
+        notify.Primary |> should equal parserdMove
+        notify.Check |> should equal move.IsCheck
+        notify.Mate |> should equal move.IsCheckMate
+        notify.PawnPromotion |> should equal promoted
     }
     
     for row in game do
-        do! processMove whiteConn row.WhiteMove
-        match row.BlackMove with
-        | Some move -> 
-            do! processMove blackConn move
-        | None -> ()
+        let color, move = row
+        let connection = 
+            match color with
+            | White -> whiteConn
+            | Black -> blackConn
+
+        do! processMove connection move
         
     let checkEndGame color = task {
         // wait events
@@ -83,14 +109,9 @@ let processGame (createConnection: NotificationHandler -> Task<ServerConnection>
         | x -> failwithf "Invalid end game notification %A: i = %d" x i
     }
     
-    let last = List.last game
-    if last.WhiteMove.Mate then do! checkEndGame White
-    else
-        match last.BlackMove with
-        | Some row ->
-            if row.Mate then do! checkEndGame Black
-        | None -> ()
-
+    let _, last = List.last game
+    if last.IsCheckMate.HasValue && last.IsCheckMate.Value then do! checkEndGame White
+    
     do! whiteConn.Close()
     do! blackConn.Close()
 }

@@ -11,6 +11,8 @@ open Types.Channel
 open FsUnit.Xunit
 open FSharp.Collections.ParallelSeq
 open Types.Domain
+open ilf.pgn.Data
+open ChessServer.Common.ChessHelper
 
 //[<Fact(Skip="too long")>]
 [<Fact>]
@@ -24,15 +26,25 @@ let ``process pgn files on session and check correctness`` () =
         let channels = channelInfo()
         let sw, sb = channels.CreateSession()
 
-        let processMove session opponentNotify pgnMove =
-            let primary = pgnMove.Primary
-            let move = {
-                Src = primary.Src
-                Dst = primary.Dst
-                PawnPromotion = pgnMove.PawnPromotion
+        let processMove session opponentNotify (move: IlfMove) =
+            let parserdMove = moveAction (move.OriginSquare.ToString() |> positionFromString) (move.TargetSquare.ToString() |> positionFromString)
+            let promoted = 
+                if move.PromotedPiece.HasValue then
+                    match move.PromotedPiece.Value with
+                    | PieceType.Bishop -> Some Bishop
+                    | PieceType.King -> Some King
+                    | PieceType.Queen -> Some Queen
+                    | PieceType.Rook -> Some Rook
+                    | PieceType.Knight -> Some Knight
+                    | PieceType.Pawn -> Some Pawn
+                    | _ -> failwithf "unknown type %A" move.PromotedPiece.Value
+                else None
+            let moveCommand = {
+                Move = parserdMove
+                PawnPromotion = promoted
             }
             
-            let result = session.CreateMove move
+            let result = session.CreateMove moveCommand
             match result with
             | Ok _ -> ()
             | _ -> failwith "Invalid move result"
@@ -43,14 +55,22 @@ let ``process pgn files on session and check correctness`` () =
                 | EndGameNotify _ :: MoveNotify moveDesc :: _ -> moveDesc
                 | _ -> failTest "Invalid notify sequence"
 
-            moveDesc |> should equal pgnMove
+            moveDesc.Primary |> should equal parserdMove
+            moveDesc.Check |> should equal move.IsCheck
+            moveDesc.Mate |> should equal move.IsCheckMate
+            moveDesc.PawnPromotion |> should equal promoted
 
 
         game
         |> List.iteri (fun m row -> 
-            processMove sw channels.Black.GetNotify row.WhiteMove
-            match row.BlackMove with
-            | Some move -> processMove sb channels.White.GetNotify move
-            | None -> ()
+            let color, move = row
+            match color with
+            | White -> processMove sw channels.Black.GetNotify move
+            //let firstConn, secondConn = channels.White, channels.Black
+            //let firstSession, secondSession = sw, sb
+            //processMove sw secondConn.GetNotify row
+            //match row.BlackMove with
+            //| Some move -> processMove sb channels.White.GetNotify move
+            //| None -> ()
         )
     )

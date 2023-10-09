@@ -225,7 +225,6 @@ let private ws (webSocket : WebSocket) (context: HttpContext) =
                     logger.LogInformation("Channel {0} disconnected. Active connections: {x}", connectionId, channelManager.Count())    
                 }
 
-                //let channel = this.GetChannel()
                 let state = channel.GetState()
                 match state with
                 | Matched _ ->

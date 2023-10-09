@@ -8,6 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="PgnParser\Bootstrap.fs" />
+    <Compile Include="PgnParser\PgnTags.fs" />
+    <Compile Include="PgnParser\BasicParsers.fs" />
+    <Compile Include="PgnParser\BasicChessParsers.fs" />
+    <Compile Include="PgnParser\DateTagParser.fs" />
+    <Compile Include="PgnParser\FenTagParser.fs" />
+    <Compile Include="PgnParser\TagParsers.fs" />
+    <Compile Include="PgnParser\MoveParsers.fs" />
+    <Compile Include="PgnParser\MoveSeriesParsers.fs" />
+    <Compile Include="PgnParser\GameParsers.fs" />
+    <Compile Include="PgnParser\Parser.fs" />
     <None Include="pgn\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -39,12 +50,14 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageReference Include="FParsec" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ChessServer.Client\ChessServer.Client.fsproj" />
     <ProjectReference Include="..\ChessServer.Common\ChessServer.Common.fsproj" />
     <ProjectReference Include="..\ChessServer\ChessServer.fsproj" />
+    <ProjectReference Include="..\pgn.Data\pgn.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

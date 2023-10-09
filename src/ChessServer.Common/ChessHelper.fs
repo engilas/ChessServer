@@ -85,8 +85,7 @@ let getMoveDescriptionFromEngine (engine: Engine) =
     let pawnPromoted = ifExists lastMove.PawnPromotedTo lastMove.PawnPromotedTo
 
     { 
-        Primary = move; 
-        Secondary = secondMove; 
+        Primary = move;
         TakenPiecePos = takenPiece; 
         PawnPromotion = fromEngineType pawnPromoted 
         Check = engine.GetWhiteCheck() || engine.GetBlackCheck()

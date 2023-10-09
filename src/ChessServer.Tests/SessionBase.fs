@@ -14,8 +14,10 @@ open StateContainer
 let applyMany f = List.map f >> ignore
 
 let moveStub = {
-    Src = 0uy
-    Dst = 0uy
+    Move = {
+        Src = 0uy
+        Dst = 0uy
+    }
     PawnPromotion = None
 }
 
@@ -76,7 +78,7 @@ let channelInfo () =
         CreateSession = fun () -> createSession white.Channel black.Channel
     }
 
-let getMove src dst = {moveStub with Src = positionFromString src; Dst = positionFromString dst}
+let getMove src dst = {moveStub with Move = {Src = positionFromString src; Dst = positionFromString dst}}
 
 let notificatorErrorFunc x = 
     failwithf "invalid notification %A" x

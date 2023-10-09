@@ -130,7 +130,7 @@ let ``test move command - invalid move``() =
     let query2, _ = getChannel matcher
 
     let makeInvalidMove query error = 
-        let move = {Src = 0uy; Dst = 0uy; PawnPromotion = None}
+        let move = {Move = {Src = 0uy; Dst = 0uy}; PawnPromotion = None}
         let result = query (MoveCommand move)
         match result with
         | ErrorResponse (MoveErrorResponse e) -> e |> equals error
@@ -147,14 +147,14 @@ let ``test move command - correctness``() =
     let blackQuery, blackInfo = getChannel matcher
 
     let makeValidMove query src dst oppentNotify =
-        let move = {Src = positionFromString src; Dst = positionFromString dst; PawnPromotion = None}
+        let move = {Move = {Src = positionFromString src; Dst = positionFromString dst}; PawnPromotion = None}
         let result = query (MoveCommand move)
         match result with
         | OkResponse -> ()
         | _ -> failTest "invalid result"
         match oppentNotify() with
         | MoveNotify {Primary = {Src = src; Dst = dst}} :: _ 
-            when src = move.Src && dst = move.Dst -> ()
+            when src = move.Move.Src && dst = move.Move.Dst -> ()
         | x -> failTest "invalid notify"
 
     matchConnections whiteQuery blackQuery

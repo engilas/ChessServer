@@ -11,12 +11,21 @@ open EngineMappers
 open FsUnit.Xunit
 open System.Text
 open FSharp.Collections.ParallelSeq
+open ilf.pgn.Data
 
-type NotationRow = {
-    WhiteMove: MoveDescription
-    BlackMove: MoveDescription option
-    GameId: string
-}
+//type PgnMove = {
+//    Src: byte
+//    Dst: byte
+//    PawnPromotion: PieceType option
+//}
+
+//type NotationRow = {
+//    WhiteMove: PgnMove
+//    BlackMove: PgnMove
+//    GameId: string
+//}
+
+type PgnMove = Color * IlfMove
 
 [<AutoOpen>]
 module private Internal =
@@ -87,13 +96,13 @@ module private Internal =
         let isValidMove = valid && engine.MovePieceAN(move)
         if not isValidMove then failwith "invalid move"
 
-    let checkCastline (engine: Engine) engineColor = 
-        let first = engine.LastMove.MovingPiecePrimary
-        let second = engine.LastMove.MovingPieceSecondary
-        first.PieceColor |> should equal engineColor
-        first.PieceType |> should equal ChessPieceType.King
-        second.PieceColor |> should equal engineColor
-        second.PieceType |> should equal ChessPieceType.Rook
+    //let checkCastline (engine: Engine) engineColor = 
+    //    let first = engine.LastMove.MovingPiecePrimary
+    //    let second = engine.LastMove.MovingPieceSecondary
+    //    first.PieceColor |> should equal engineColor
+    //    first.PieceType |> should equal ChessPieceType.King
+    //    second.PieceColor |> should equal engineColor
+    //    second.PieceType |> should equal ChessPieceType.Rook
 
     let processMove (engine: Engine) move color =
         let move1, longCast = isLongCastling move
@@ -105,19 +114,23 @@ module private Internal =
         let move7, take = isTake move6
         let move8, piece, file, rank = getSourceHints move7
 
+        //engine.MovePieceAN
+
         if not <| String.IsNullOrWhiteSpace(move8) then failwith "parse error"
 
-        let makeMoveAN = makeMoveAN engine
+       // let makeMoveAN = makeMoveAN engine
         let engineColor = toEngineColor color
         let engineType = toEngineType piece
         let castRank = match color with White -> "1" | Black -> "8"
 
         if longCast then
-            makeMoveAN <| sprintf "e%sc%s" castRank castRank
-            checkCastline engine engineColor
+            ()
+            //makeMoveAN <| sprintf "e%sc%s" castRank castRank
+            //checkCastline engine engineColor
         elif shortCast then
-            makeMoveAN <| sprintf "e%sg%s" castRank castRank
-            checkCastline engine engineColor
+            ()
+            //makeMoveAN <| sprintf "e%sg%s" castRank castRank
+            //checkCastline engine engineColor
         elif target.IsSome then
             let target = target.Value
 
@@ -160,51 +173,69 @@ module private Internal =
 
         getMoveDescriptionFromEngine engine
         
-    let parseGame (lines: string list) =
-        let gameId =
-            lines
-            |> List.tryFind (fun line -> 
-                line.StartsWith("[FICSGamesDBGameNo")
-            )
-            |> function
-                | None -> ""
-                | Some value -> (new Regex(@"\d+")).Match(value).Value
+    let parseGame text : PgnMove list =
+        let parser = ilf.pgn.PgnParsers.Parser()
+        let db = parser.ReadFromString text
+        db.Games.Count |> should equal 1
+        let game = db.Games[0]
 
-        let lines =
-            lines
-            |> List.skipWhile (fun x ->
-                x.StartsWith('[')
-            )
-        let text = String.Join(' ', lines)
-        let scorePossibleValues = [ "1-0"; "0-1"; "1/2-1/2"; "*" ]
-        let score = 
-            scorePossibleValues |> List.find (fun x -> text.Contains(x))
-        let commentsRegex = new Regex("{.*}")
-        let text = commentsRegex.Replace(text, "").Replace(score, "")
-        let splitRegex = new Regex(@"\d+\.")
-        let moves = 
-            splitRegex.Split(text)
-            |> List.ofSeq
-            |> List.filter(fun x -> not <| String.IsNullOrWhiteSpace(x))
-            |> List.map(fun x ->
-                match x.Split(([||]: string[]), StringSplitOptions.RemoveEmptyEntries) |> List.ofSeq with
-                | fst::snd::[] ->
-                    fst.Trim(), snd.Trim()
-                | fst::[] ->
-                    fst.Trim(), null
-                | _ -> failwith "incorrect round"
-            )
-        let engine = Engine()
-        let processMove = processMove engine
-        moves
-        |> List.map(fun (white, black) -> {
-            WhiteMove = processMove white White
-            BlackMove =
-                if black <> null then
-                    Some <| processMove black Black
-                else None
-            GameId = gameId
-        })
+        
+
+        //let getMoveDesc (move: Move) =
+        //    let i = moveAction (move.OriginSquare.ToString() |> positionFromString) (move.TargetSquare.ToString() |> positionFromString)
+        //    {
+        //        Move = i,
+        //        TakenPiecePos = move.
+        //    }
+        //let gameId =
+        //    lines
+        //    |> List.tryFind (fun line -> 
+        //        line.StartsWith("[FICSGamesDBGameNo")
+        //    )
+        //    |> function
+        //        | None -> ""
+        //        | Some value -> (new Regex(@"\d+")).Match(value).Value
+
+        //let lines =
+        //    lines
+        //    |> List.skipWhile (fun x ->
+        //        x.StartsWith('[')
+        //    )
+        //let text = String.Join(' ', lines)
+        //let scorePossibleValues = [ "1-0"; "0-1"; "1/2-1/2"; "*" ]
+        //let score = 
+        //    scorePossibleValues |> List.find (fun x -> text.Contains(x))
+        //let commentsRegex = new Regex("{.*}")
+        //let text = commentsRegex.Replace(text, "").Replace(score, "")
+        //let splitRegex = new Regex(@"\d+\.")
+
+        game.MoveText 
+        |> List.ofSeq
+        |> List.map(fun x ->
+            match x.Type with
+            | MoveTextEntryType.MovePair -> 
+                let move = x :?> MovePairEntry
+                [White, move.White; Black, move.Black]
+            | MoveTextEntryType.SingleMove -> 
+                let move = x :?> HalfMoveEntry
+                [White, move.Move]
+            | _ -> []
+        ) 
+        |> List.collect id
+        //let moves = 
+        //    splitRegex.Split(text)
+        //    |> List.ofSeq
+        //    |> List.filter(fun x -> not <| String.IsNullOrWhiteSpace(x))
+        //    |> List.map(fun x ->
+        //        match x.Split(([||]: string[]), StringSplitOptions.RemoveEmptyEntries) |> List.ofSeq with
+        //        | fst::snd::[] ->
+        //            fst.Trim(), snd.Trim()
+        //        | fst::[] ->
+        //            fst.Trim(), null
+        //        | _ -> failwith "incorrect round"
+        //    )
+        //let engine = Engine()
+        //let processMove = processMove engine
 
     let prepareText files =
         let text = 
@@ -212,6 +243,8 @@ module private Internal =
             |> List.map File.ReadAllText
             |> List.fold (fun (acc: StringBuilder) elem -> acc.AppendLine(elem)) (StringBuilder())
             |> (fun sb -> sb.ToString())
+
+        //q.Games[0].MoveText.Item[0].
 
         let splitRegex = new Regex(@"^\s*\n\s*\n", RegexOptions.Multiline)
 
@@ -222,11 +255,7 @@ module private Internal =
     let parallelProcess intercept list =
         list
         |> intercept
-        |> PSeq.map (fun (game: string) ->
-            game.Split('\n', StringSplitOptions.RemoveEmptyEntries) 
-            |> List.ofArray
-            |> parseGame
-        )
+        |> PSeq.map parseGame
         |> PSeq.filter(fun x -> x.Length > 0)
 
     let parseAll = prepareText >> parallelProcess id

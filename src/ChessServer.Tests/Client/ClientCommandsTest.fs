@@ -112,9 +112,8 @@ let ``test move command``() = task {
     
     moveNotify.Check |> should equal false
     moveNotify.Mate |> should equal false
-    moveNotify.Primary.Src |> should equal move.Src
-    moveNotify.Primary.Dst |> should equal move.Dst
-    moveNotify.Secondary |> should equal None
+    moveNotify.Primary.Src |> should equal move.Move.Src
+    moveNotify.Primary.Dst |> should equal move.Move.Dst
     moveNotify.PawnPromotion |> should equal None
     moveNotify.TakenPiecePos |> should equal None
 }

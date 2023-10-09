@@ -28,8 +28,8 @@ let private processRegular state move (replyChannel:AsyncReplyChannel<MoveResult
 
     let state =
         if move.Source = state.Next then
-            let src = move.Command.Src
-            let dst = move.Command.Dst
+            let src = move.Command.Move.Src
+            let dst = move.Command.Move.Dst
 
             let pieceExists = state.Engine.GetPieceTypeAt(src) <> ChessPieceType.None
 
